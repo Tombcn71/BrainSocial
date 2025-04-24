@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getSocialAccounts } from "@/app/actions/social-accounts";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";

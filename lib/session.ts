@@ -1,16 +1,21 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
-import sql from "@/lib/db";
+import sql, { safeArray } from "@/lib/db";
+import { cache } from "react";
 
-export async function getSession() {
+// Add this line to make the route dynamic
+export const dynamic = "force-dynamic";
+
+// Use cache to prevent multiple calls to the same function
+export const getSession = cache(async () => {
   try {
     return await getServerSession(authOptions);
   } catch (error) {
     console.error("Error getting server session:", error);
     return null;
   }
-}
+});
 
 export async function getCurrentUser() {
   try {
@@ -24,11 +29,13 @@ export async function getCurrentUser() {
 
       if (email) {
         // Zoek de gebruiker op basis van email
-        const users = await sql`
+        const usersResult = await sql`
           SELECT id FROM users WHERE email = ${email}
         `;
+        // Use type assertion to tell TypeScript that safeArray always returns an array
+        const users = safeArray(usersResult) as any[];
 
-        if (users && users.length > 0) {
+        if (users.length > 0) {
           console.log("User found by email:", users[0].id);
           return {
             id: users[0].id,
@@ -43,7 +50,7 @@ export async function getCurrentUser() {
     }
 
     // Als fallback, probeer de auth cookie te gebruiken
-    const authCookie = cookies().get("auth")?.value;
+    const authCookie = (await cookies()).get("auth")?.value;
 
     if (authCookie) {
       console.log("User found via auth cookie:", authCookie);

@@ -1,31 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
+  const { toast } = useToast();
 
   async function handleGoogleLogin() {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl })
+      await signIn("google", { callbackUrl });
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("Login error:", error);
       toast({
         title: "Fout bij inloggen",
-        description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
+        description:
+          "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
         variant: "destructive",
-      })
-      setIsLoading(false)
+      });
+      setIsLoading(false);
     }
   }
 
@@ -35,12 +36,15 @@ export default function LoginForm() {
         onClick={handleGoogleLogin}
         className="w-full flex items-center justify-center gap-2"
         variant="outline"
-        disabled={isLoading}
-      >
+        disabled={isLoading}>
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            xmlns="http://www.w3.org/2000/svg">
             <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
               <path
                 fill="#4285F4"
@@ -64,5 +68,5 @@ export default function LoginForm() {
         {isLoading ? "Bezig met inloggen..." : "Inloggen met Google"}
       </Button>
     </div>
-  )
+  );
 }

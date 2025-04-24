@@ -1,32 +1,34 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export default function SignupForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const plan = searchParams.get("plan") || "starter"
-  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const plan = searchParams?.get("plan") || "starter";
+  const { toast } = useToast();
 
   async function handleGoogleSignup() {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // We'll use Google OAuth for signup as well
-      await signIn("google", { callbackUrl: "/dashboard" })
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      console.error("Signup error:", error)
+      console.error("Signup error:", error);
       toast({
         title: "Fout bij aanmelden",
-        description: "Er is een fout opgetreden bij het aanmelden. Probeer het opnieuw.",
+        description:
+          "Er is een fout opgetreden bij het aanmelden. Probeer het opnieuw.",
         variant: "destructive",
-      })
-      setIsLoading(false)
+      });
+      setIsLoading(false);
     }
   }
 
@@ -37,7 +39,10 @@ export default function SignupForm() {
           <div className="ml-3 flex-1 md:flex md:justify-between">
             <p className="text-sm text-muted-foreground">
               Je registreert voor het{" "}
-              <span className="font-medium">{plan.charAt(0).toUpperCase() + plan.slice(1)}</span> abonnement.
+              <span className="font-medium">
+                {plan.charAt(0).toUpperCase() + plan.slice(1)}
+              </span>{" "}
+              abonnement.
             </p>
           </div>
         </div>
@@ -47,12 +52,15 @@ export default function SignupForm() {
         onClick={handleGoogleSignup}
         className="w-full flex items-center justify-center gap-2"
         variant="outline"
-        disabled={isLoading}
-      >
+        disabled={isLoading}>
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            xmlns="http://www.w3.org/2000/svg">
             <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
               <path
                 fill="#4285F4"
@@ -76,5 +84,5 @@ export default function SignupForm() {
         {isLoading ? "Bezig met aanmelden..." : "Aanmelden met Google"}
       </Button>
     </div>
-  )
+  );
 }
