@@ -345,19 +345,42 @@ export async function publishToSocialMedia(
       hasImage: !!content.image_url,
     });
 
-    // Haal het social account op voor het platform
-    console.log(`Fetching social account for platform: ${platform}`);
-    const accountResult = await sql`
-      SELECT * FROM social_accounts 
-      WHERE user_id = ${user.id} AND platform = ${platform}
-      LIMIT 1
-    `;
+    // BELANGRIJKE WIJZIGING: Zoek naar Facebook accounts met een page_id
+    let accountQuery = null;
+    if (platform === "facebook") {
+      console.log("Fetching Facebook Page account");
+      accountQuery = sql`
+        SELECT * FROM social_accounts 
+        WHERE user_id = ${user.id} 
+        AND platform = ${platform}
+        AND page_id IS NOT NULL
+        LIMIT 1
+      `;
+    } else {
+      console.log(`Fetching social account for platform: ${platform}`);
+      accountQuery = sql`
+        SELECT * FROM social_accounts 
+        WHERE user_id = ${user.id} 
+        AND platform = ${platform}
+        LIMIT 1
+      `;
+    }
+
+    // Voer de query uit
+    const accountResult = await accountQuery;
 
     // Veilig omgaan met het resultaat
     const accounts = safeArray(accountResult);
     console.log(`Found ${accounts.length} accounts for platform ${platform}`);
 
     if (accounts.length === 0) {
+      if (platform === "facebook") {
+        return {
+          success: false,
+          error:
+            "Je moet een Facebook Pagina verbinden om te kunnen publiceren. Persoonlijke profielen worden niet ondersteund.",
+        };
+      }
       return { success: false, error: `No ${platform} account connected` };
     }
 

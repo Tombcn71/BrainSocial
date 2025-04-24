@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  // Removed all references to state parameter
 
   // Controleer op fouten van Facebook
   if (error) {
@@ -30,6 +31,8 @@ export async function GET(request: NextRequest) {
       new URL("/dashboard/accounts/connect?error=missing_params", request.url)
     );
   }
+
+  // Removed all state parameter validation
 
   try {
     // Haal de client ID, client secret en redirect URI op uit de omgevingsvariabelen
@@ -98,15 +101,16 @@ export async function GET(request: NextRequest) {
       // Loop door alle pagina's
       if (pagesData.data && Array.isArray(pagesData.data)) {
         for (const page of pagesData.data) {
-          // Sla de Facebook pagina op
+          // BELANGRIJKE WIJZIGING: Sla de Facebook pagina op als "facebook" platform, niet als "facebook_page"
           await connectSocialAccount({
-            platform: "facebook_page",
-            accountName: page.name,
+            platform: "facebook", // Gewijzigd van "facebook_page" naar "facebook"
+            accountName: page.name + " (Pagina)",
             accountId: page.id,
             accessToken: page.access_token, // Gebruik de page access token
             tokenExpiry: new Date(
               Date.now() + 60 * 24 * 60 * 60 * 1000
             ).toISOString(),
+            pageId: page.id, // Sla de page_id op voor het publiceren
           });
 
           // Haal Instagram Business account op voor deze pagina
