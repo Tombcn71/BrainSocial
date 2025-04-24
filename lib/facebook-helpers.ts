@@ -2,7 +2,7 @@
  * Helper functions for Facebook API integration
  */
 
-// Function to check the validity and details of a Facebook access token
+// Function to check if a Facebook access token is valid and get its details
 export async function checkTokenDetails(accessToken: string) {
   try {
     const response = await fetch(
@@ -10,13 +10,16 @@ export async function checkTokenDetails(accessToken: string) {
     );
 
     if (!response.ok) {
-      return { success: false, error: "Failed to fetch token details" };
+      return {
+        success: false,
+        error: "Failed to fetch token details from Facebook",
+      };
     }
 
     const data = await response.json();
 
-    if (!data.data) {
-      return { success: false, error: "Invalid token format" };
+    if (!data.data || !data.data.is_valid) {
+      return { success: false, error: "Invalid access token", isValid: false };
     }
 
     return {
@@ -32,66 +35,71 @@ export async function checkTokenDetails(accessToken: string) {
   }
 }
 
-// Function to get the Facebook Pages that a user manages
+// Function to get Facebook pages
 export async function getUserPages(accessToken: string) {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
     );
 
     if (!response.ok) {
-      return { success: false, error: "Failed to fetch Facebook Pages" };
+      return { success: false, error: "Failed to fetch Facebook pages" };
     }
 
     const data = await response.json();
-
-    if (!data.data) {
-      return { success: false, error: "No pages data received from Facebook" };
-    }
-
-    return { success: true, pages: data.data };
+    return { success: true, pages: data.data || [] };
   } catch (error) {
-    console.error("Error fetching Facebook Pages:", error);
-    return { success: false, error: "Failed to fetch Facebook Pages" };
+    console.error("Error fetching Facebook pages:", error);
+    return { success: false, error: "Failed to fetch Facebook pages" };
   }
 }
 
 // Function to check if a Facebook access token has the required permissions
-export async function checkFacebookPermissions(accessToken: string) {
+export async function checkFacebookPermissions(
+  accessToken: string
+): Promise<
+  | { success: true; permissions: string[] }
+  | { success: false; error: string; missingPermissions?: string[] }
+> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
     );
+
     if (!response.ok) {
-      console.error(
-        "Error fetching Facebook permissions:",
-        response.statusText
-      );
-      return { success: false };
+      return {
+        success: false,
+        error: "Failed to fetch permissions from Facebook",
+      };
     }
 
     const data = await response.json();
+
     if (!data.data) {
-      console.error("No permissions data received from Facebook");
-      return { success: false };
+      return { success: false, error: "Invalid response from Facebook" };
     }
 
+    // Check for required permissions
     const requiredPermissions = ["pages_read_engagement", "pages_manage_posts"];
     const grantedPermissions = data.data
       .filter((perm: any) => perm.status === "granted")
       .map((perm: any) => perm.permission);
+
     const missingPermissions = requiredPermissions.filter(
       (perm) => !grantedPermissions.includes(perm)
     );
 
     if (missingPermissions.length > 0) {
-      console.warn("Missing Facebook permissions:", missingPermissions);
-      return { success: false, missingPermissions };
+      return {
+        success: false,
+        error: `Missing required permissions: ${missingPermissions.join(", ")}`,
+        missingPermissions,
+      };
     }
 
-    return { success: true };
+    return { success: true, permissions: grantedPermissions };
   } catch (error) {
     console.error("Error checking Facebook permissions:", error);
-    return { success: false };
+    return { success: false, error: "Failed to check Facebook permissions" };
   }
 }

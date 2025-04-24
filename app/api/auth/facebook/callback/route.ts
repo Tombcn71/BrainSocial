@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // Sla het Facebook account op
     console.log("Storing Facebook user account...");
-    await connectSocialAccount({
+    const connectResult = await connectSocialAccount({
       platform: "facebook",
       accountName: userData.name + " (Persoonlijk)",
       accountId: userData.id,
@@ -104,7 +104,12 @@ export async function GET(request: NextRequest) {
       tokenExpiry: new Date(
         Date.now() + 60 * 24 * 60 * 60 * 1000
       ).toISOString(),
+      pageId: userData.id,
     });
+
+    if (!connectResult.success) {
+      console.error("Error connecting Facebook account:", connectResult.error);
+    }
 
     // Haal Facebook pagina's op
     console.log("Fetching Facebook pages...");
@@ -126,7 +131,7 @@ export async function GET(request: NextRequest) {
           console.log(`Processing page: ${page.name} (${page.id})`);
 
           // Sla de Facebook pagina op als "facebook_page" platform (CHANGED FROM "facebook" to "facebook_page")
-          await connectSocialAccount({
+          const pageConnectResult = await connectSocialAccount({
             platform: "facebook_page", // Changed from "facebook" to "facebook_page" to distinguish from personal account
             accountName: page.name,
             accountId: page.id,
@@ -136,6 +141,13 @@ export async function GET(request: NextRequest) {
             ).toISOString(),
             pageId: page.id, // Sla de page_id op voor het publiceren
           });
+
+          if (!pageConnectResult.success) {
+            console.error(
+              `Error connecting Facebook page ${page.name}:`,
+              pageConnectResult.error
+            );
+          }
 
           console.log(
             `Facebook page ${page.name} stored successfully as facebook_page`
@@ -161,7 +173,7 @@ export async function GET(request: NextRequest) {
               );
 
               // Sla het Instagram Business account op
-              await connectSocialAccount({
+              const instagramConnectResult = await connectSocialAccount({
                 platform: "instagram",
                 accountName:
                   instagramAccount.username || `Instagram via ${page.name}`,
@@ -173,6 +185,15 @@ export async function GET(request: NextRequest) {
                 profileImageUrl: instagramAccount.profile_picture_url,
                 pageId: page.id, // Sla de Facebook Page ID op voor het publiceren van content
               });
+
+              if (!instagramConnectResult.success) {
+                console.error(
+                  `Error connecting Instagram account ${
+                    instagramAccount.username || "Unknown"
+                  }:`,
+                  instagramConnectResult.error
+                );
+              }
 
               console.log("Instagram account stored successfully");
             } else {
