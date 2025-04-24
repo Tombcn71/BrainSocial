@@ -161,13 +161,15 @@ export default function ContentItem({ item }: { item: any }) {
             </Button>
           </Link>
         )}
-        {!item.published && item.platform === "instagram" && (
+        {/* Conditionally render InstagramPublishButton */}
+        {item.platform === "instagram" && !item.published && (
           <InstagramPublishButton
             contentId={item.id}
             hasImage={!!item.image_url}
           />
         )}
-        {!item.published && item.platform !== "instagram" && (
+        {/* Conditionally render PublishDialog for other platforms */}
+        {item.platform !== "instagram" && !item.published && (
           <PublishDialog
             contentId={item.id}
             platform={item.platform}
