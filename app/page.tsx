@@ -568,14 +568,14 @@ export default function Home() {
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="#"
+                    href="/privacy-policy"
                     className="text-muted-foreground hover:text-brand-purple transition-colors">
                     Privacy
                   </a>
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="/terms"
                     className="text-muted-foreground hover:text-brand-purple transition-colors">
                     Terms
                   </a>
