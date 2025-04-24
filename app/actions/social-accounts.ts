@@ -239,7 +239,7 @@ export async function refreshSocialAccountToken(accountId: string) {
   }
 }
 
-// Pas de functie aan om het type te gebruiken
+// Update the publishToFacebook function to ensure we're using the correct endpoint and token
 async function publishToFacebook({
   content,
   accessToken,
@@ -294,7 +294,7 @@ async function publishToFacebook({
       }
     }
 
-    // Publiceer naar een Facebook Pagina
+    // Explicitly use the page endpoint
     const endpoint = `https://graph.facebook.com/v18.0/${pageId}/feed`;
 
     // Bereid de body voor
@@ -311,6 +311,7 @@ async function publishToFacebook({
     console.log(`Publishing to Facebook endpoint: ${endpoint}`);
     console.log(`With message: ${content.content.substring(0, 50)}...`);
     console.log(`Using page ID: ${pageId}`);
+    console.log(`Using access token: ${accessToken.substring(0, 10)}...`);
 
     // Maak de request
     const response = await fetch(endpoint, {
@@ -325,10 +326,18 @@ async function publishToFacebook({
     });
 
     // Controleer de response
-    const data = await response.json();
-
     if (!response.ok) {
+      const data = await response.json();
       console.error("Facebook API error:", data);
+
+      // Log more detailed error information
+      if (data.error) {
+        console.error("Error code:", data.error.code);
+        console.error("Error message:", data.error.message);
+        console.error("Error type:", data.error.type);
+        console.error("Error subcode:", data.error.error_subcode);
+      }
+
       return {
         success: false,
         error: `Facebook API fout: ${data.error?.message || "Onbekende fout"}. 
@@ -336,6 +345,7 @@ async function publishToFacebook({
       };
     }
 
+    const data = await response.json();
     console.log(`Successfully published to Facebook, post ID: ${data.id}`);
     return { success: true, postId: data.id };
   } catch (error) {
@@ -348,7 +358,7 @@ async function publishToFacebook({
   }
 }
 
-// Wijzig ook de publishToSocialMedia functie om het juiste type te gebruiken
+// Update the publishToSocialMedia function to ensure we're using the correct account for Facebook
 export async function publishToSocialMedia(
   contentId: string,
   platform: string
@@ -403,16 +413,12 @@ export async function publishToSocialMedia(
        LIMIT 1
      `;
     } else if (platform === "facebook" || platform === "facebook_page") {
-      console.log("Fetching Facebook account");
+      console.log("Fetching Facebook page account");
+      // Explicitly look for facebook_page accounts first
       accountQuery = sql`
        SELECT * FROM social_accounts 
        WHERE user_id = ${user.id} 
-       AND (platform = 'facebook_page' OR platform = 'facebook')
-       ORDER BY 
-         CASE
-           WHEN platform = 'facebook_page' THEN 0
-           ELSE 1
-         END
+       AND platform = 'facebook_page'
        LIMIT 1
      `;
     } else {
@@ -431,6 +437,29 @@ export async function publishToSocialMedia(
     // Veilig omgaan met het resultaat
     const accounts = safeArray(accountResult);
     console.log(`Found ${accounts.length} accounts for platform ${platform}`);
+
+    // If no facebook_page account was found and we're trying to publish to Facebook,
+    // try to find a regular facebook account with a page_id
+    if (
+      accounts.length === 0 &&
+      (platform === "facebook" || platform === "facebook_page")
+    ) {
+      console.log(
+        "No facebook_page account found, trying to find a facebook account with page_id"
+      );
+      const fallbackQuery = await sql`
+        SELECT * FROM social_accounts 
+        WHERE user_id = ${user.id} 
+        AND platform = 'facebook'
+        AND page_id IS NOT NULL
+        LIMIT 1
+      `;
+      const fallbackAccounts = safeArray(fallbackQuery);
+      if (fallbackAccounts.length > 0) {
+        console.log("Found a facebook account with page_id");
+        accounts.push(fallbackAccounts[0]);
+      }
+    }
 
     if (accounts.length === 0) {
       if (platform === "facebook" || platform === "facebook_page") {
@@ -461,27 +490,32 @@ export async function publishToSocialMedia(
       };
     }
 
+    // NIEUWE CONTROLE: Controleer of er een page_id is voor Facebook
+    if (
+      (platform === "facebook" || platform === "facebook_page") &&
+      !account.page_id
+    ) {
+      return {
+        success: false,
+        error:
+          "Je moet een Facebook Pagina verbinden om te kunnen publiceren. Persoonlijke profielen worden niet ondersteund.",
+      };
+    }
+
     let externalPostId: string | undefined = undefined;
     let externalPostUrl: string | undefined = undefined;
 
     // Publiceer de content naar het juiste platform
     if (platform === "facebook" || platform === "facebook_page") {
-      console.log(`Publishing to ${platform}`);
-
-      // NIEUWE CONTROLE: Controleer of er een page_id is voor Facebook
-      if (platform === "facebook" && !account.page_id) {
-        return {
-          success: false,
-          error:
-            "Je moet een Facebook Pagina verbinden om te kunnen publiceren. Persoonlijke profielen worden niet ondersteund.",
-        };
-      }
+      console.log(
+        `Publishing to ${platform} using account platform: ${account.platform}`
+      );
 
       // Publiceer naar Facebook
       const facebookResult = await publishToFacebook({
         content: content,
         accessToken: account.access_token,
-        pageId: account.page_id || account.account_id, // For facebook_page, use account_id if page_id is not available
+        pageId: account.page_id, // Always use the page_id for Facebook
       });
 
       console.log("Facebook publish result:", facebookResult);

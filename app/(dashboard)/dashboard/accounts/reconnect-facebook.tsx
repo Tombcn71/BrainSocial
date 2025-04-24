@@ -31,7 +31,6 @@ export default function ReconnectFacebook() {
         "pages_show_list",
         "pages_read_engagement",
         "pages_manage_posts",
-        "publish_to_groups",
         "instagram_basic",
         "instagram_content_publish",
       ];
@@ -72,11 +71,10 @@ export default function ReconnectFacebook() {
         <ul className="list-disc pl-5 mb-4 space-y-1">
           <li>pages_read_engagement</li>
           <li>pages_manage_posts</li>
-          <li>publish_to_groups (if posting to groups)</li>
         </ul>
         <p className="text-sm text-muted-foreground">
           These permissions allow the app to post content to your Facebook
-          profile, pages, and groups.
+          profile and pages.
         </p>
       </CardContent>
       <CardFooter>

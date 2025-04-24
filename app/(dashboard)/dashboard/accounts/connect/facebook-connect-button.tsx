@@ -26,7 +26,8 @@ export default function FacebookConnectButton() {
         process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI
       );
 
-      // Definieer de permissies die we nodig hebben
+      // Make sure we're not requesting publish_to_groups permission
+      // The permissions should be:
       const scope = encodeURIComponent(
         [
           "public_profile",
