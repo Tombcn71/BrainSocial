@@ -65,7 +65,7 @@ export default function CalendarView({
   const [userContent, setUserContent] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [selectedContent, setSelectedContent] = useState<string>("");
+  const [selectedContent, setSelectedContent] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
@@ -116,7 +116,9 @@ export default function CalendarView({
       const result = await getScheduledPosts(100, projectId, campaignId);
       if (result.success) {
         // Zorg ervoor dat we altijd een array hebben, zelfs als result.scheduledPosts undefined is
-        setScheduledPosts(result.scheduledPosts || []);
+        setScheduledPosts(
+          Array.isArray(result.scheduledPosts) ? result.scheduledPosts : []
+        );
       } else {
         // Als er een fout is, zet dan een lege array
         setScheduledPosts([]);
@@ -134,8 +136,8 @@ export default function CalendarView({
     try {
       const result = await getUserContent(100, projectId, campaignId);
       if (result.success) {
-        // Zorg ervoor dat we altijd een array hebben
-        setUserContent(result.content || []);
+        // Ensure we always set an array, even if result.content is undefined
+        setUserContent(Array.isArray(result.content) ? result.content : []);
       } else {
         setUserContent([]);
       }
@@ -169,8 +171,8 @@ export default function CalendarView({
     try {
       const result = await getCampaigns(projectId);
       if (result.success) {
-        // Zorg ervoor dat we altijd een array hebben
-        setCampaigns(result.campaigns || []);
+        // Ensure we always set an array, even if result.campaigns is undefined
+        setCampaigns(Array.isArray(result.campaigns) ? result.campaigns : []);
       } else {
         setCampaigns([]);
       }

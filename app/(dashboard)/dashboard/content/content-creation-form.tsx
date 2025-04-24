@@ -86,13 +86,17 @@ export default function ContentCreationForm() {
     try {
       const result = await getCampaigns(pid);
       if (result.success) {
-        setCampaigns(result.campaigns);
+        // Ensure we always set an array, even if result.campaigns is undefined
+        const campaignsArray = Array.isArray(result.campaigns)
+          ? result.campaigns
+          : [];
+        setCampaigns(campaignsArray);
 
         // Check if campaignId is in URL
         const urlCampaignId = searchParams.get("campaignId");
         if (
           urlCampaignId &&
-          result.campaigns.some((c: any) => c.id === urlCampaignId)
+          campaignsArray.some((c: any) => c.id === urlCampaignId)
         ) {
           setCampaignId(urlCampaignId);
         } else {
@@ -126,7 +130,7 @@ export default function ContentCreationForm() {
     try {
       const result = await generateContent(platform, contentType, tone, topic);
 
-      if (result.success) {
+      if (result.success && result.content) {
         setContent(result.content);
         toast({
           title: "Content gegenereerd",
