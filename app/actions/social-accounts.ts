@@ -239,10 +239,18 @@ async function publishToFacebook({
   pageId?: string;
 }): Promise<PublishResult> {
   try {
-    // Als er een pageId is, publiceren we naar een pagina, anders naar het persoonlijke profiel
-    const endpoint = pageId
-      ? `https://graph.facebook.com/v18.0/${pageId}/feed`
-      : `https://graph.facebook.com/v18.0/me/feed`;
+    // BELANGRIJKE WIJZIGING: Als er geen pageId is, kunnen we niet publiceren naar een persoonlijk profiel
+    // Facebook staat dit niet meer toe in nieuwere API versies zonder speciale toestemming
+    if (!pageId) {
+      return {
+        success: false,
+        error:
+          "Publiceren naar een persoonlijk Facebook profiel wordt niet ondersteund. Verbind een Facebook Pagina om te kunnen publiceren.",
+      };
+    }
+
+    // Publiceer naar een Facebook Pagina
+    const endpoint = `https://graph.facebook.com/v18.0/${pageId}/feed`;
 
     // Bereid de body voor
     const body: Record<string, string> = {
@@ -257,6 +265,7 @@ async function publishToFacebook({
     // Log de request voor debugging
     console.log(`Publishing to Facebook endpoint: ${endpoint}`);
     console.log(`With message: ${content.content.substring(0, 50)}...`);
+    console.log(`Using page ID: ${pageId}`);
 
     // Maak de request
     const response = await fetch(endpoint, {
@@ -303,28 +312,41 @@ export async function publishToSocialMedia(
   publishedPostId?: string;
   externalPostUrl?: string;
 }> {
+  console.log(
+    `Starting publishToSocialMedia for contentId: ${contentId}, platform: ${platform}`
+  );
+
   const user = await getCurrentUser();
 
   if (!user) {
+    console.log("No authenticated user found");
     return { success: false, error: "Not authenticated" };
   }
 
   try {
     // Haal de content op
+    console.log("Fetching content from database");
     const contentResult = await sql`
       SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
     `;
 
     // Veilig omgaan met het resultaat
     const contentItems = safeArray(contentResult);
+    console.log(`Found ${contentItems.length} content items`);
 
     if (contentItems.length === 0) {
       return { success: false, error: "Content not found" };
     }
 
     const content = contentItems[0];
+    console.log("Content details:", {
+      title: content.title,
+      platform: content.platform,
+      hasImage: !!content.image_url,
+    });
 
     // Haal het social account op voor het platform
+    console.log(`Fetching social account for platform: ${platform}`);
     const accountResult = await sql`
       SELECT * FROM social_accounts 
       WHERE user_id = ${user.id} AND platform = ${platform}
@@ -333,6 +355,7 @@ export async function publishToSocialMedia(
 
     // Veilig omgaan met het resultaat
     const accounts = safeArray(accountResult);
+    console.log(`Found ${accounts.length} accounts for platform ${platform}`);
 
     if (accounts.length === 0) {
       return { success: false, error: `No ${platform} account connected` };
@@ -340,9 +363,16 @@ export async function publishToSocialMedia(
 
     // Cast het account naar het juiste type
     const account = accounts[0] as SocialAccountRecord;
+    console.log("Account details:", {
+      id: account.id,
+      platform: account.platform,
+      hasPageId: !!account.page_id,
+      hasTokenExpiry: !!account.token_expiry,
+    });
 
     // Controleer of de token nog geldig is
     if (account.token_expiry && new Date(account.token_expiry) < new Date()) {
+      console.log("Token expired:", account.token_expiry);
       return {
         success: false,
         error: "Access token expired. Please refresh your token.",
@@ -354,12 +384,25 @@ export async function publishToSocialMedia(
 
     // Publiceer de content naar het juiste platform
     if (platform === "facebook") {
+      console.log("Publishing to Facebook");
+
+      // NIEUWE CONTROLE: Controleer of er een page_id is voor Facebook
+      if (!account.page_id) {
+        return {
+          success: false,
+          error:
+            "Je moet een Facebook Pagina verbinden om te kunnen publiceren. Persoonlijke profielen worden niet ondersteund.",
+        };
+      }
+
       // Publiceer naar Facebook
       const facebookResult = await publishToFacebook({
         content: content,
         accessToken: account.access_token,
         pageId: account.page_id,
       });
+
+      console.log("Facebook publish result:", facebookResult);
 
       if (!facebookResult.success) {
         return { success: false, error: facebookResult.error };
