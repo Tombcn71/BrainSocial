@@ -276,7 +276,7 @@ async function publishToFacebook({
     if (!permissionsCheck.success) {
       return {
         success: false,
-        error: `Facebook permissions error: ${permissionsCheck.error}. Please reconnect your Facebook account with the required permissions.`,
+        error: `Facebook permissions error: ${permissionsCheck.error}. Please reconnect your Facebook account with the required permissions. <a href="/dashboard/accounts/reconnect" class="text-blue-500 hover:underline">Reconnect Facebook</a>`,
       };
     }
 
