@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Facebook } from "lucide-react";
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
 
 export default function FacebookConnectButton() {
@@ -13,16 +12,6 @@ export default function FacebookConnectButton() {
   const handleConnect = async () => {
     try {
       setIsLoading(true);
-
-      // Genereer een state parameter om CSRF aanvallen te voorkomen
-      const state = uuidv4();
-
-      // Sla de state op in een cookie met verbeterde instellingen
-      // Langere max-age, expliciete path en secure flag
-      document.cookie = `facebook_oauth_state=${state}; path=/; max-age=3600; SameSite=Lax; secure`;
-
-      // Log de state voor debugging
-      console.log("Generated Facebook OAuth state:", state);
 
       // Bouw de OAuth URL
       const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -42,12 +31,12 @@ export default function FacebookConnectButton() {
           "pages_manage_metadata",
           "instagram_basic",
           "instagram_content_publish",
-          // "publish_to_groups" removed - this permission was causing the error
+          // "publish_to_groups" removed
         ].join(",")
       );
 
-      // Bouw de volledige OAuth URL
-      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
+      // Bouw de volledige OAuth URL - zonder state parameter
+      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
 
       // Redirect naar de OAuth URL
       window.location.href = oauthUrl;

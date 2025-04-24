@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/session";
 import { connectSocialAccount } from "@/app/actions/social-accounts";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -12,7 +13,6 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
-  const state = searchParams.get("state");
   const error = searchParams.get("error");
 
   // Controleer op fouten van Facebook
@@ -23,19 +23,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Controleer of we een code en state hebben ontvangen
-  if (!code || !state) {
+  // Controleer of we een code hebben ontvangen
+  if (!code) {
+    console.error("Missing code parameter");
     return NextResponse.redirect(
       new URL("/dashboard/accounts/connect?error=missing_params", request.url)
-    );
-  }
-
-  // Verifieer de state parameter om CSRF aanvallen te voorkomen
-  const cookieStore = cookies();
-  const savedState = cookieStore.get("facebook_oauth_state")?.value;
-  if (!savedState || savedState !== state) {
-    return NextResponse.redirect(
-      new URL("/dashboard/accounts/connect?error=invalid_state", request.url)
     );
   }
 
