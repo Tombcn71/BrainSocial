@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  subscription  Subscription?
+  socialAccounts SocialAccount[]
+  contents      Content[]
+  scheduledPosts ScheduledPost[]
+  projects      Project[]
+  campaigns     Campaign[]
+  publishedPosts PublishedPost[]
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  stripePriceId String?
+  stripeCurrentPeriodEnd DateTime?
+  
+  plan          String    // "starter", "pro", "business"
+  status        String    // "active", "canceled", "past_due"
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SocialAccount {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  platform        String    // "twitter", "facebook", "instagram", "linkedin"
+  accountId       String    @map("account_id")
+  accountName     String    @map("account_name")
+  accessToken     String    @map("access_token")
+  refreshToken    String?   @map("refresh_token")
+  tokenExpiry     DateTime? @map("token_expiry")
+  profileImageUrl String?   @map("profile_image_url")
+  pageId          String?   @map("page_id")
+  
+  publishedPosts  PublishedPost[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([userId, platform, accountId])
+}
+
+model Content {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title         String?
+  content       String
+  platform      String    // "twitter", "facebook", "instagram", "linkedin"
+  contentType   String    // "post", "tweet", "story", "reel"
+  imageUrl      String?   @map("image_url")
+  published     Boolean   @default(false)
+  campaignId    String?   @map("campaign_id")
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  scheduledPosts ScheduledPost[]
+  publishedPosts PublishedPost[]
+}
+
+model ScheduledPost {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  contentId     String
+  content       Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  campaignId    String?   @map("campaign_id")
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  
+  scheduledFor  DateTime
+  status        String    // "scheduled", "published", "failed"
+  publishedAt   DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Project {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name          String
+  description   String?
+  clientName    String?     @map("client_name")
+  status        String?     @default("active")
+  
+  campaigns     Campaign[]
+  
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  @@map("projects")
+}
+
+model Campaign {
+  id            String      @id @default(uuid())
+  projectId     String      @map("project_id")
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId        String      @map("user_id")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name          String
+  description   String?
+  startDate     DateTime?   @map("start_date")
+  endDate       DateTime?   @map("end_date")
+  status        String      @default("draft")
+  platforms     String[]
+  
+  contents      Content[]
+  scheduledPosts ScheduledPost[]
+  
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  @@map("campaigns")
+}
+
+model PublishedPost {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId       String    @map("content_id")
+  content         Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  platform        String
+  accountId       String    @map("account_id")
+  socialAccount   SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  publishedAt     DateTime  @default(now()) @map("published_at")
+  externalPostId  String?   @map("external_post_id")
+  externalPostUrl String?   @map("external_post_url")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  @@map("published_posts")
+}
