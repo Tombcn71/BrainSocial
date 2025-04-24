@@ -45,7 +45,8 @@ export async function connectSocialAccount({
   tokenExpiry?: string;
   pageId?: string;
 }) {
-  const userId = (await cookies()).get("auth")?.value;
+  const authCookie = cookies().get("auth");
+  const userId = authCookie ? (await authCookie).value : null;
 
   if (!userId) {
     return { success: false, error: "Not authenticated" };
@@ -54,9 +55,9 @@ export async function connectSocialAccount({
   try {
     // Check if account already exists
     const existingAccountResult = await sql`
-      SELECT id FROM social_accounts 
-      WHERE user_id = ${userId} AND platform = ${platform} AND account_id = ${accountId}
-    `;
+   SELECT id FROM social_accounts 
+   WHERE user_id = ${userId} AND platform = ${platform} AND account_id = ${accountId}
+ `;
 
     // Veilig omgaan met het resultaat
     const existingAccounts = safeArray(existingAccountResult);
@@ -84,15 +85,15 @@ export async function connectSocialAccount({
     if (existingAccount) {
       // Update existing account
       await sql`
-        UPDATE social_accounts 
-        SET account_name = ${accountName}, 
-            access_token = ${accessToken}, 
-            refresh_token = ${refreshToken}, 
-            token_expiry = ${tokenExpiry},
-            page_id = ${pageId},
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}
-      `;
+     UPDATE social_accounts 
+     SET account_name = ${accountName}, 
+         access_token = ${accessToken}, 
+         refresh_token = ${refreshToken}, 
+         token_expiry = ${tokenExpiry},
+         page_id = ${pageId},
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ${id}
+   `;
 
       revalidatePath("/dashboard/accounts");
       return { success: true, accountId: id };
@@ -102,10 +103,10 @@ export async function connectSocialAccount({
     const newId = uuidv4();
 
     await sql`
-      INSERT INTO social_accounts 
-      (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id) 
-      VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId})
-    `;
+   INSERT INTO social_accounts 
+   (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id) 
+   VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId})
+ `;
 
     revalidatePath("/dashboard/accounts");
     return { success: true, accountId: newId };
@@ -124,10 +125,10 @@ export async function getSocialAccounts() {
 
   try {
     const accountsResult = await sql`
-      SELECT * FROM social_accounts 
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-    `;
+   SELECT * FROM social_accounts 
+   WHERE user_id = ${user.id}
+   ORDER BY created_at DESC
+ `;
 
     // Zorg ervoor dat we altijd een array teruggeven
     const accounts = safeArray(accountsResult);
@@ -154,9 +155,9 @@ export async function disconnectSocialAccount(accountId: string) {
 
   try {
     await sql`
-      DELETE FROM social_accounts 
-      WHERE id = ${accountId} AND user_id = ${user.id}
-    `;
+   DELETE FROM social_accounts 
+   WHERE id = ${accountId} AND user_id = ${user.id}
+ `;
 
     revalidatePath("/dashboard/accounts");
     return { success: true };
@@ -177,9 +178,9 @@ export async function refreshSocialAccountToken(accountId: string) {
   try {
     // Haal het account op
     const accountsResult = await sql`
-      SELECT * FROM social_accounts
-      WHERE id = ${accountId} AND user_id = ${user.id}
-    `;
+   SELECT * FROM social_accounts
+   WHERE id = ${accountId} AND user_id = ${user.id}
+ `;
 
     // Veilig omgaan met het resultaat
     const accounts = safeArray(accountsResult);
@@ -218,13 +219,13 @@ export async function refreshSocialAccountToken(accountId: string) {
 
       // Update het account met de nieuwe token
       await sql`
-        UPDATE social_accounts
-        SET 
-          access_token = ${newAccessToken},
-          token_expiry = ${newTokenExpiry.toISOString()},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${accountId}
-      `;
+     UPDATE social_accounts
+     SET 
+       access_token = ${newAccessToken},
+       token_expiry = ${newTokenExpiry.toISOString()},
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = ${accountId}
+   `;
 
       revalidatePath("/dashboard/accounts");
       return { success: true };
@@ -253,70 +254,32 @@ async function publishToFacebook({
   pageId?: string;
 }): Promise<PublishResult> {
   try {
-    console.log(`Publishing to Facebook with pageId: ${pageId || "none"}`);
+    // First, check if we have the required permissions
+    const permissionsCheck = await checkFacebookPermissions(accessToken);
 
-    // If no pageId is provided, try to get pages for this account
-    if (!pageId) {
-      console.log("No page ID provided, trying to fetch pages");
-
-      try {
-        const pagesResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
-        );
-
-        if (pagesResponse.ok) {
-          const pagesData = await pagesResponse.json();
-          console.log(`Found ${pagesData.data?.length || 0} Facebook pages`);
-
-          // If we have pages, use the first one
-          if (
-            pagesData.data &&
-            Array.isArray(pagesData.data) &&
-            pagesData.data.length > 0
-          ) {
-            const page = pagesData.data[0];
-            console.log(`Using page: ${page.name} (${page.id})`);
-            pageId = page.id;
-            accessToken = page.access_token; // Use the page access token
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching Facebook pages:", error);
-      }
-
-      // If we still don't have a pageId, return an error
-      if (!pageId) {
-        console.error(
-          "No page ID provided for Facebook publishing and couldn't find any pages"
-        );
-        return {
-          success: false,
-          error:
-            "Publiceren naar een persoonlijk Facebook profiel wordt niet ondersteund. Verbind een Facebook Pagina om te kunnen publiceren.",
-        };
-      }
+    if (!permissionsCheck.success) {
+      return {
+        success: false,
+        error: `Facebook permissions error: ${permissionsCheck.error}. Please reconnect your Facebook account with the required permissions.`,
+      };
     }
 
-    // Explicitly use the page endpoint
-    const endpoint = `https://graph.facebook.com/v18.0/${pageId}/feed`;
+    // If we have the permissions, proceed with publishing
+    const endpoint = pageId
+      ? `https://graph.facebook.com/v18.0/${pageId}/feed`
+      : `https://graph.facebook.com/v18.0/me/feed`;
 
-    // Bereid de body voor
+    // Prepare the body
     const body: Record<string, string> = {
       message: content.content,
     };
 
-    // Voeg een afbeelding toe als die beschikbaar is
+    // Add an image if available
     if (content.image_url) {
       body.link = content.image_url;
     }
 
-    // Log de request voor debugging
-    console.log(`Publishing to Facebook endpoint: ${endpoint}`);
-    console.log(`With message: ${content.content.substring(0, 50)}...`);
-    console.log(`Using page ID: ${pageId}`);
-    console.log(`Using access token: ${accessToken.substring(0, 10)}...`);
-
-    // Maak de request
+    // Make the request
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -328,35 +291,25 @@ async function publishToFacebook({
       }),
     });
 
-    // Controleer de response
+    // Check the response
     if (!response.ok) {
       const data = await response.json();
       console.error("Facebook API error:", data);
-
-      // Log more detailed error information
-      if (data.error) {
-        console.error("Error code:", data.error.code);
-        console.error("Error message:", data.error.message);
-        console.error("Error type:", data.error.type);
-        console.error("Error subcode:", data.error.error_subcode);
-      }
-
       return {
         success: false,
-        error: `Facebook API fout: ${data.error?.message || "Onbekende fout"}. 
-        Controleer of je app de juiste permissies heeft: pages_read_engagement en pages_manage_posts.`,
+        error: `Facebook API error: ${data.error?.message || "Unknown error"}. 
+    Please check if your app has the required permissions: pages_read_engagement and pages_manage_posts.`,
       };
     }
 
     const data = await response.json();
-    console.log(`Successfully published to Facebook, post ID: ${data.id}`);
     return { success: true, postId: data.id };
   } catch (error) {
     console.error("Error publishing to Facebook:", error);
     return {
       success: false,
       error:
-        "Er is een fout opgetreden bij het publiceren naar Facebook. Controleer de console voor meer details.",
+        "An error occurred while publishing to Facebook. Check the console for more details.",
     };
   }
 }
@@ -386,8 +339,8 @@ export async function publishToSocialMedia(
     // Haal de content op
     console.log("Fetching content from database");
     const contentResult = await sql`
-     SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
-   `;
+  SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
+`;
 
     // Veilig omgaan met het resultaat
     const contentItems = safeArray(contentResult);
@@ -409,29 +362,29 @@ export async function publishToSocialMedia(
     if (platform === "instagram") {
       console.log("Fetching Instagram account with page_id");
       accountQuery = sql`
-       SELECT * FROM social_accounts 
-       WHERE user_id = ${user.id} 
-       AND platform = ${platform}
-       AND page_id IS NOT NULL
-       LIMIT 1
-     `;
+    SELECT * FROM social_accounts 
+    WHERE user_id = ${user.id} 
+    AND platform = ${platform}
+    AND page_id IS NOT NULL
+    LIMIT 1
+  `;
     } else if (platform === "facebook" || platform === "facebook_page") {
       console.log("Fetching Facebook page account");
       // Explicitly look for facebook_page accounts first
       accountQuery = sql`
-       SELECT * FROM social_accounts 
-       WHERE user_id = ${user.id} 
-       AND platform = 'facebook_page'
-       LIMIT 1
-     `;
+    SELECT * FROM social_accounts 
+    WHERE user_id = ${user.id} 
+    AND platform = 'facebook_page'
+    LIMIT 1
+  `;
     } else {
       console.log(`Fetching social account for platform: ${platform}`);
       accountQuery = sql`
-       SELECT * FROM social_accounts 
-       WHERE user_id = ${user.id} 
-       AND platform = ${platform}
-       LIMIT 1
-     `;
+    SELECT * FROM social_accounts 
+    WHERE user_id = ${user.id} 
+    AND platform = ${platform}
+    LIMIT 1
+  `;
     }
 
     // Voer de query uit
@@ -451,12 +404,12 @@ export async function publishToSocialMedia(
         "No facebook_page account found, trying to find a facebook account with page_id"
       );
       const fallbackQuery = await sql`
-        SELECT * FROM social_accounts 
-        WHERE user_id = ${user.id} 
-        AND platform = 'facebook'
-        AND page_id IS NOT NULL
-        LIMIT 1
-      `;
+     SELECT * FROM social_accounts 
+     WHERE user_id = ${user.id} 
+     AND platform = 'facebook'
+     AND page_id IS NOT NULL
+     LIMIT 1
+   `;
       const fallbackAccounts = safeArray(fallbackQuery);
       if (fallbackAccounts.length > 0) {
         console.log("Found a facebook account with page_id");
@@ -600,21 +553,21 @@ export async function publishToSocialMedia(
 
     // Markeer de content als gepubliceerd
     await sql`
-     UPDATE content
-     SET published = true
-     WHERE id = ${contentId} AND user_id = ${user.id}
-   `;
+  UPDATE content
+  SET published = true
+  WHERE id = ${contentId} AND user_id = ${user.id}
+`;
 
     // Maak een record van de gepubliceerde post
     const publishedPostId = uuidv4();
     await sql`
-     INSERT INTO published_posts (
-       id, user_id, content_id, platform, account_id, published_at, external_post_id, external_post_url
-     )
-     VALUES (
-       ${publishedPostId}, ${user.id}, ${contentId}, ${platform}, ${account.id}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
-     )
-   `;
+  INSERT INTO published_posts (
+    id, user_id, content_id, platform, account_id, published_at, external_post_id, externalPost_url
+  )
+  VALUES (
+    ${publishedPostId}, ${user.id}, ${contentId}, ${platform}, ${account.id}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
+  )
+`;
 
     revalidatePath("/dashboard/content/overview");
 
@@ -634,14 +587,14 @@ export async function getPublishedPosts(limit = 50) {
 
   try {
     const postsResult = await sql`
-      SELECT pp.*, c.content, c.title, c.image_url, sa.account_name
-      FROM published_posts pp
-      JOIN content c ON pp.content_id = c.id
-      JOIN social_accounts sa ON pp.account_id = sa.id
-      WHERE pp.user_id = ${user.id}
-      ORDER BY pp.published_at DESC
-      LIMIT ${limit}
-    `;
+   SELECT pp.*, c.content, c.title, c.image_url, sa.account_name
+   FROM published_posts pp
+   JOIN content c ON pp.content_id = c.id
+   JOIN social_accounts sa ON pp.account_id = sa.id
+   WHERE pp.user_id = ${user.id}
+   ORDER BY pp.published_at DESC
+   LIMIT ${limit}
+ `;
 
     // Zorg ervoor dat we altijd een array teruggeven
     const posts = safeArray(postsResult);
@@ -668,8 +621,8 @@ export async function publishToInstagram(contentId: string, accountId: string) {
   try {
     // Haal de content op
     const contentResult = await sql`
-      SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
-    `;
+   SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
+ `;
 
     // Veilig omgaan met het resultaat
     const contentItems = safeArray(contentResult);
@@ -690,9 +643,9 @@ export async function publishToInstagram(contentId: string, accountId: string) {
 
     // Haal het social account op
     const accountResult = await sql`
-      SELECT * FROM social_accounts 
-      WHERE id = ${accountId} AND user_id = ${user.id} AND platform = 'instagram'
-    `;
+   SELECT * FROM social_accounts 
+   WHERE id = ${accountId} AND user_id = ${user.id} AND platform = 'instagram'
+ `;
 
     // Veilig omgaan met het resultaat
     const accounts = safeArray(accountResult);
@@ -763,21 +716,21 @@ export async function publishToInstagram(contentId: string, accountId: string) {
 
     // Markeer de content als gepubliceerd
     await sql`
-      UPDATE content
-      SET published = true
-      WHERE id = ${contentId} AND user_id = ${user.id}
-    `;
+   UPDATE content
+   SET published = true
+   WHERE id = ${contentId} AND user_id = ${user.id}
+ `;
 
     // Maak een record van de gepubliceerde post
     const publishedPostId = uuidv4();
     await sql`
-      INSERT INTO published_posts (
-        id, user_id, content_id, platform, account_id, published_at, external_post_id, external_post_url
-      )
-      VALUES (
-        ${publishedPostId}, ${user.id}, ${contentId}, 'instagram', ${accountId}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
-      )
-    `;
+   INSERT INTO published_posts (
+     id, user_id, content_id, platform, account_id, published_at, external_post_id, external_post_url
+   )
+   VALUES (
+     ${publishedPostId}, ${user.id}, ${contentId}, 'instagram', ${accountId}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
+   )
+ `;
 
     revalidatePath("/dashboard/content/overview");
 
