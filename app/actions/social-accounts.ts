@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/session";
 import sql, { safeArray } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
 // Voeg deze interface toe bovenaan het bestand, na de imports
 interface SocialAccountRecord {
@@ -55,15 +54,16 @@ export async function connectSocialAccount({
     profileImageUrl,
   });
 
-  // Probeer eerst de auth cookie te krijgen
-  const authCookie = (await cookies()).get("auth");
-  const userId = authCookie ? authCookie.value : null;
-  console.log("User ID from cookie:", userId);
+  // Try to get the user from getCurrentUser which checks both NextAuth and auth cookie
+  const user = await getCurrentUser();
 
-  if (!userId) {
-    console.error("No auth cookie found, authentication failed");
+  if (!user || !user.id) {
+    console.error("No authenticated user found");
     return { success: false, error: "Not authenticated" };
   }
+
+  const userId = user.id;
+  console.log("User ID from session or cookie:", userId);
 
   try {
     // Check if account already exists
