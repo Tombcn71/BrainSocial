@@ -36,7 +36,7 @@ export async function connectSocialAccount({
   refreshToken,
   tokenExpiry,
   pageId,
-  profileImageUrl, // Add profileImageUrl to the type definition
+  profileImageUrl,
 }: {
   platform: string;
   accountId: string;
@@ -45,7 +45,7 @@ export async function connectSocialAccount({
   refreshToken?: string;
   tokenExpiry?: string;
   pageId?: string;
-  profileImageUrl?: string; // Add profileImageUrl to the type definition
+  profileImageUrl?: string;
 }) {
   console.log("connectSocialAccount called with:", {
     platform,
@@ -54,22 +54,23 @@ export async function connectSocialAccount({
     pageId,
     profileImageUrl,
   });
+
+  // Probeer eerst de auth cookie te krijgen
   const authCookie = (await cookies()).get("auth");
-  const userId = authCookie ? (await authCookie).value : null;
+  const userId = authCookie ? authCookie.value : null;
   console.log("User ID from cookie:", userId);
 
   if (!userId) {
+    console.error("No auth cookie found, authentication failed");
     return { success: false, error: "Not authenticated" };
   }
-
-  console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
   try {
     // Check if account already exists
     const existingAccountResult = await sql`
-   SELECT id FROM social_accounts 
-   WHERE user_id = ${userId} AND platform = ${platform} AND account_id = ${accountId}
- `;
+     SELECT id FROM social_accounts 
+     WHERE user_id = ${userId} AND platform = ${platform} AND account_id = ${accountId}
+   `;
 
     // Veilig omgaan met het resultaat
     const existingAccounts = safeArray(existingAccountResult);
@@ -98,16 +99,16 @@ export async function connectSocialAccount({
       console.log("Updating existing account:", id);
       // Update existing account
       await sql`
-     UPDATE social_accounts 
-     SET account_name = ${accountName}, 
-         access_token = ${accessToken}, 
-         refresh_token = ${refreshToken}, 
-         token_expiry = ${tokenExpiry},
-         page_id = ${pageId},
-         profile_image_url = ${profileImageUrl},
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = ${id}
-   `;
+       UPDATE social_accounts 
+       SET account_name = ${accountName}, 
+           access_token = ${accessToken}, 
+           refresh_token = ${refreshToken}, 
+           token_expiry = ${tokenExpiry},
+           page_id = ${pageId},
+           profile_image_url = ${profileImageUrl},
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ${id}
+     `;
 
       revalidatePath("/dashboard/accounts");
       return { success: true, accountId: id };
@@ -118,16 +119,15 @@ export async function connectSocialAccount({
     console.log("Creating new account:", newId);
 
     await sql`
-   INSERT INTO social_accounts 
-   (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id, profile_image_url) 
-   VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId}, ${profileImageUrl})
- `;
+     INSERT INTO social_accounts 
+     (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id, profile_image_url) 
+     VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId}, ${profileImageUrl})
+   `;
 
     revalidatePath("/dashboard/accounts");
     return { success: true, accountId: newId };
   } catch (error) {
     console.error("Connect social account error:", error);
-    console.error("DATABASE_URL:", process.env.DATABASE_URL);
     return { success: false, error: "Failed to connect social account" };
   }
 }
@@ -757,11 +757,9 @@ export async function publishToInstagram(contentId: string, accountId: string) {
   }
 }
 
-async function checkFacebookPermissions(accessToken: string): Promise<{
-  [x: string]: any;
-  success: boolean;
-  missingPermissions?: string[];
-}> {
+async function checkFacebookPermissions(
+  accessToken: string
+): Promise<{ success: boolean; missingPermissions?: string[] }> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`

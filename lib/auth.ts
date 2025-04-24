@@ -41,16 +41,23 @@ export const authOptions: NextAuthOptions = {
           // Generate a new UUID for the user
           const userId = uuidv4();
 
-          // Create new user
+          // Create new user with OAuth ID
           await sql`
-            INSERT INTO users (id, name, email, image) 
-            VALUES (${userId}, ${user.name}, ${user.email}, ${user.image})
+            INSERT INTO users (id, name, email, image, oauth_id) 
+            VALUES (${userId}, ${user.name}, ${user.email}, ${user.image}, ${user.id})
           `;
 
           // Create subscription with default plan
           await sql`
             INSERT INTO subscriptions (user_id, plan, status) 
             VALUES (${userId}, 'starter', 'active')
+          `;
+        } else {
+          // Update the OAuth ID if it's not set
+          await sql`
+            UPDATE users 
+            SET oauth_id = ${user.id}
+            WHERE id = ${result[0].id} AND (oauth_id IS NULL OR oauth_id != ${user.id})
           `;
         }
 
@@ -69,6 +76,17 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

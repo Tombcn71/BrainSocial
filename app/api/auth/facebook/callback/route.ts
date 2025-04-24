@@ -1,17 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { connectSocialAccount } from "@/app/actions/social-accounts";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   console.log("Facebook callback route called");
 
-  const user = await getCurrentUser();
+  // Probeer eerst de gebruiker op te halen via getCurrentUser
+  let user = await getCurrentUser();
 
+  // Als dat niet lukt, probeer de auth cookie direct te lezen
   if (!user) {
-    console.log("No authenticated user found");
-    return NextResponse.redirect(new URL("/login", request.url));
+    const authCookie = (await cookies()).get("auth")?.value;
+    if (authCookie) {
+      user = { id: authCookie };
+      console.log("Using auth cookie directly:", authCookie);
+    } else {
+      console.log("No authenticated user found, redirecting to login");
+      return NextResponse.redirect(
+        new URL("/login?callbackUrl=/dashboard/accounts", request.url)
+      );
+    }
   }
 
   const searchParams = request.nextUrl.searchParams;
@@ -76,7 +87,8 @@ export async function GET(request: NextRequest) {
     // Haal gebruikersgegevens op van Facebook
     console.log("Fetching user data...");
     const userResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?fields=id,name,email&access_token=${accessToken}`
+      `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${accessToken}`,
+      { method: "GET" }
     );
 
     if (!userResponse.ok) {
@@ -100,6 +112,7 @@ export async function GET(request: NextRequest) {
       accountName: userData.name + " (Persoonlijk)",
       accountId: userData.id,
       accessToken,
+      profileImageUrl: userData.picture?.data?.url, // Store profile image URL
       // Facebook tokens verlopen na 60 dagen
       tokenExpiry: new Date(
         Date.now() + 60 * 24 * 60 * 60 * 1000
@@ -130,7 +143,7 @@ export async function GET(request: NextRequest) {
         for (const page of pagesData.data) {
           console.log(`Processing page: ${page.name} (${page.id})`);
 
-          // Sla de Facebook pagina op als "facebook_page" platform (CHANGED FROM "facebook" to "facebook_page")
+          // Sla de Facebook pagina op als "facebook_page" platform
           const pageConnectResult = await connectSocialAccount({
             platform: "facebook_page", // Changed from "facebook" to "facebook_page" to distinguish from personal account
             accountName: page.name,
@@ -185,15 +198,6 @@ export async function GET(request: NextRequest) {
                 profileImageUrl: instagramAccount.profile_picture_url,
                 pageId: page.id, // Sla de Facebook Page ID op voor het publiceren van content
               });
-
-              if (!instagramConnectResult.success) {
-                console.error(
-                  `Error connecting Instagram account ${
-                    instagramAccount.username || "Unknown"
-                  }:`,
-                  instagramConnectResult.error
-                );
-              }
 
               console.log("Instagram account stored successfully");
             } else {

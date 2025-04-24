@@ -1,6 +1,13 @@
-import NextAuth from "next-auth"
-import { authOptions } from "@/lib/auth"
+import sql, { safeArray } from "@/lib/db";
 
-const handler = NextAuth(authOptions)
+// Inside a callback or handler function
+async function findUserByEmail(email: string) {
+  const result =
+    await sql`SELECT id, name, email FROM users WHERE email = ${email}`;
 
-export { handler as GET, handler as POST }
+  // Use safeArray to ensure we have an array
+  const users = safeArray(result);
+
+  // Now we can safely check if we found a user and access the first element
+  return users.length > 0 ? users[0] : null;
+}
