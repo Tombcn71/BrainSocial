@@ -31,7 +31,7 @@ export default function FacebookConnectButton() {
       const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
       const redirectUri = encodeURIComponent(
         process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI ||
-          "http://localhost:3000/api/auth/facebook/callback"
+          "https://www.brainsocial.nl/api/auth/facebook/callback"
       );
 
       // Build the OAuth URL

@@ -8,7 +8,7 @@ const META_CLIENT_ID = process.env.META_CLIENT_ID;
 const META_CLIENT_SECRET = process.env.META_CLIENT_SECRET;
 const META_REDIRECT_URI =
   process.env.META_REDIRECT_URI ||
-  "http://localhost:3000/api/auth/meta/callback";
+  "https://www.brainsocial.nl/api/auth/meta/callback";
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
