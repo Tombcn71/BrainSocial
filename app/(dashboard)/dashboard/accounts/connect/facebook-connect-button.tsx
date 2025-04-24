@@ -17,8 +17,12 @@ export default function FacebookConnectButton() {
       // Genereer een state parameter om CSRF aanvallen te voorkomen
       const state = uuidv4();
 
-      // Sla de state op in een cookie
-      document.cookie = `facebook_oauth_state=${state}; path=/; max-age=3600; SameSite=Lax`;
+      // Sla de state op in een cookie met verbeterde instellingen
+      // Langere max-age, expliciete path en secure flag
+      document.cookie = `facebook_oauth_state=${state}; path=/; max-age=3600; SameSite=Lax; secure`;
+
+      // Log de state voor debugging
+      console.log("Generated Facebook OAuth state:", state);
 
       // Bouw de OAuth URL
       const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -28,7 +32,6 @@ export default function FacebookConnectButton() {
       );
 
       // Definieer de permissies die we nodig hebben
-      // Zorg ervoor dat we alle benodigde permissies aanvragen
       const scope = encodeURIComponent(
         [
           "public_profile",

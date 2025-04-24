@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
   // Controleer of we een code en state hebben ontvangen
   if (!code || !state) {
+    console.error("Missing code or state parameter", { code, state });
     return NextResponse.redirect(
       new URL("/dashboard/accounts/connect?error=missing_params", request.url)
     );
@@ -35,7 +36,16 @@ export async function GET(request: NextRequest) {
   // Verifieer de state parameter om CSRF aanvallen te voorkomen
   const cookieStore = await cookies();
   const savedState = cookieStore.get("facebook_oauth_state")?.value;
+
+  // Log de states voor debugging
+  console.log("Received state:", state);
+  console.log("Saved state from cookie:", savedState);
+
   if (!savedState || savedState !== state) {
+    console.error("Invalid state parameter", {
+      savedState,
+      receivedState: state,
+    });
     return NextResponse.redirect(
       new URL("/dashboard/accounts/connect?error=invalid_state", request.url)
     );
