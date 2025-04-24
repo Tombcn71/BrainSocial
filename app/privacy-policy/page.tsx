@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
               <BrainCircuitIcon className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-brand-purple">
-              BrainSocial
+              BrainSocial.nl
             </span>
           </Link>
         </div>
