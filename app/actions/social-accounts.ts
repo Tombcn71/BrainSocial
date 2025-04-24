@@ -373,8 +373,8 @@ export async function publishToSocialMedia(
     // Haal de content op
     console.log("Fetching content from database");
     const contentResult = await sql`
-      SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
-    `;
+     SELECT * FROM content WHERE id = ${contentId} AND user_id = ${user.id}
+   `;
 
     // Veilig omgaan met het resultaat
     const contentItems = safeArray(contentResult);
@@ -396,37 +396,33 @@ export async function publishToSocialMedia(
     if (platform === "instagram") {
       console.log("Fetching Instagram account with page_id");
       accountQuery = sql`
-        SELECT * FROM social_accounts 
-        WHERE user_id = ${user.id} 
-        AND platform = ${platform}
-        AND page_id IS NOT NULL
-        LIMIT 1
-      `;
-    } else if (platform === "facebook") {
+       SELECT * FROM social_accounts 
+       WHERE user_id = ${user.id} 
+       AND platform = ${platform}
+       AND page_id IS NOT NULL
+       LIMIT 1
+     `;
+    } else if (platform === "facebook" || platform === "facebook_page") {
       console.log("Fetching Facebook account");
       accountQuery = sql`
-        SELECT * FROM social_accounts 
-        WHERE user_id = ${user.id} 
-        AND (platform = ${platform} OR platform = 'facebook_page')
-        ORDER BY platform DESC  -- This will prioritize 'facebook_page' over 'facebook'
-        LIMIT 1
-      `;
-    } else if (platform === "facebook_page") {
-      console.log("Fetching Facebook Page account");
-      accountQuery = sql`
-        SELECT * FROM social_accounts 
-        WHERE user_id = ${user.id} 
-        AND platform = ${platform}
-        LIMIT 1
-      `;
+       SELECT * FROM social_accounts 
+       WHERE user_id = ${user.id} 
+       AND (platform = 'facebook_page' OR platform = 'facebook')
+       ORDER BY 
+         CASE
+           WHEN platform = 'facebook_page' THEN 0
+           ELSE 1
+         END
+       LIMIT 1
+     `;
     } else {
       console.log(`Fetching social account for platform: ${platform}`);
       accountQuery = sql`
-        SELECT * FROM social_accounts 
-        WHERE user_id = ${user.id} 
-        AND platform = ${platform}
-        LIMIT 1
-      `;
+       SELECT * FROM social_accounts 
+       WHERE user_id = ${user.id} 
+       AND platform = ${platform}
+       LIMIT 1
+     `;
     }
 
     // Voer de query uit
@@ -437,7 +433,7 @@ export async function publishToSocialMedia(
     console.log(`Found ${accounts.length} accounts for platform ${platform}`);
 
     if (accounts.length === 0) {
-      if (platform === "facebook") {
+      if (platform === "facebook" || platform === "facebook_page") {
         return {
           success: false,
           error:
@@ -558,25 +554,30 @@ export async function publishToSocialMedia(
       const publishData = await publishResponse.json();
       externalPostId = publishData.id;
       externalPostUrl = `https://instagram.com/p/${publishData.id}`;
+    } else {
+      return {
+        success: false,
+        error: `Publishing to ${platform} is not supported yet.`,
+      };
     }
 
     // Markeer de content als gepubliceerd
     await sql`
-      UPDATE content
-      SET published = true
-      WHERE id = ${contentId} AND user_id = ${user.id}
-    `;
+     UPDATE content
+     SET published = true
+     WHERE id = ${contentId} AND user_id = ${user.id}
+   `;
 
     // Maak een record van de gepubliceerde post
     const publishedPostId = uuidv4();
     await sql`
-      INSERT INTO published_posts (
-        id, user_id, content_id, platform, account_id, published_at, external_post_id, external_post_url
-      )
-      VALUES (
-        ${publishedPostId}, ${user.id}, ${contentId}, ${platform}, ${account.id}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
-      )
-    `;
+     INSERT INTO published_posts (
+       id, user_id, content_id, platform, account_id, published_at, external_post_id, external_post_url
+     )
+     VALUES (
+       ${publishedPostId}, ${user.id}, ${contentId}, ${platform}, ${account.id}, CURRENT_TIMESTAMP, ${externalPostId}, ${externalPostUrl}
+     )
+   `;
 
     revalidatePath("/dashboard/content/overview");
 
