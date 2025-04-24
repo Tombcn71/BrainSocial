@@ -11,7 +11,7 @@ export default function SignupPage() {
           <div className="flex justify-center">
             <Link href="/" className="flex items-center gap-2">
               <BrainCircuitIcon className="h-8 w-8" />
-              <span className="text-2xl font-bold">SocialAI</span>
+              <span className="text-2xl font-bold">BrainSocial</span>
             </Link>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight">
