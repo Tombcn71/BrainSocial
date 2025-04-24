@@ -39,7 +39,7 @@ export default function FacebookConnectButton() {
           "pages_manage_metadata",
           "instagram_basic",
           "instagram_content_publish",
-          "publish_to_groups",
+          // "publish_to_groups" removed - this permission was causing the error
         ].join(",")
       );
 

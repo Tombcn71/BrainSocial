@@ -16,11 +16,7 @@ export async function checkFacebookPermissions(accessToken: string) {
     const data = await response.json();
 
     // Check if we have the required permissions
-    const requiredPermissions = [
-      "pages_read_engagement",
-      "pages_manage_posts",
-      "publish_to_groups",
-    ];
+    const requiredPermissions = ["pages_read_engagement", "pages_manage_posts"];
 
     const missingPermissions = requiredPermissions.filter((permission) => {
       return !data.data.some(
@@ -56,4 +52,53 @@ export function getFacebookPermissionUrl(
   return `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&state=${state}&scope=${missingPermissions.join(",")}`;
+}
+
+// Function to check token details
+export async function checkTokenDetails(accessToken: string) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/debug_token?input_token=${accessToken}&access_token=${accessToken}`
+    );
+
+    if (!response.ok) {
+      return { success: false, error: "Failed to debug token" };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      details: data.data,
+      isValid: data.data?.is_valid === true,
+      expiresAt: data.data?.expires_at
+        ? new Date(data.data.expires_at * 1000).toISOString()
+        : "unknown",
+      scopes: data.data?.scopes || [],
+    };
+  } catch (error) {
+    console.error("Error checking token details:", error);
+    return { success: false, error: "Failed to check token details" };
+  }
+}
+
+// Function to get user pages
+export async function getUserPages(accessToken: string) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+    );
+
+    if (!response.ok) {
+      return { success: false, error: "Failed to fetch user pages" };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      pages: data.data || [],
+    };
+  } catch (error) {
+    console.error("Error fetching user pages:", error);
+    return { success: false, error: "Failed to fetch user pages" };
+  }
 }
