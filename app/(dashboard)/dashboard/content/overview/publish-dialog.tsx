@@ -21,7 +21,13 @@ import {
   InstagramIcon,
   TwitterIcon,
   LinkedinIcon,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface PublishDialogProps {
   contentId: string;
@@ -39,6 +45,7 @@ export default function PublishDialog({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [selectedPlatform, setSelectedPlatform] = useState(platform);
 
   const handlePublish = async () => {
     setIsPublishing(true);
@@ -46,21 +53,21 @@ export default function PublishDialog({
 
     try {
       // Call the server action to publish content
-      const result = await publishToSocialMedia(contentId, platform);
+      const result = await publishToSocialMedia(contentId, selectedPlatform);
 
       if (!result.success) {
-        setError(result.error || `Failed to publish to ${platform}`);
+        setError(result.error || `Failed to publish to ${selectedPlatform}`);
         toast({
           title: "Fout bij publiceren",
           description:
             result.error ||
-            `Er is een fout opgetreden bij het publiceren naar ${platform}.`,
+            `Er is een fout opgetreden bij het publiceren naar ${selectedPlatform}.`,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Content gepubliceerd",
-          description: `Je content is succesvol gepubliceerd op ${platform}.`,
+          description: `Je content is succesvol gepubliceerd op ${selectedPlatform}.`,
         });
         setIsOpen(false);
         router.refresh();
@@ -98,8 +105,10 @@ export default function PublishDialog({
   }
 
   const getPlatformIcon = () => {
-    switch (platform) {
+    switch (selectedPlatform) {
       case "facebook":
+        return <FacebookIcon className="h-4 w-4 text-[#1877F2]" />;
+      case "facebook_page":
         return <FacebookIcon className="h-4 w-4 text-[#1877F2]" />;
       case "twitter":
         return <TwitterIcon className="h-4 w-4 text-[#1DA1F2]" />;
@@ -122,10 +131,10 @@ export default function PublishDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Content publiceren naar {platform}</DialogTitle>
+          <DialogTitle>Content publiceren</DialogTitle>
           <DialogDescription>
-            Je content wordt direct gepubliceerd op {platform}.
-            {platform === "instagram" && !hasImage && (
+            Selecteer het platform waarop je de content wilt publiceren.
+            {selectedPlatform === "instagram" && !hasImage && (
               <p className="text-amber-600 mt-2">
                 Let op: Voor Instagram is een afbeelding verplicht.
               </p>
@@ -134,15 +143,76 @@ export default function PublishDialog({
         </DialogHeader>
 
         <div className="py-4">
-          <div className="flex items-center space-x-2 mb-3 p-2 rounded border">
-            {getPlatformIcon()}
-            <div>
-              <p className="font-medium capitalize">{platform}</p>
-              <p className="text-sm text-gray-500">
-                Je content wordt direct gepubliceerd
-              </p>
+          <RadioGroup
+            value={selectedPlatform}
+            onValueChange={setSelectedPlatform}>
+            <div className="flex items-center space-x-2 mb-3 p-2 rounded border hover:bg-gray-50">
+              <RadioGroupItem value="facebook" id="facebook" />
+              <Label
+                htmlFor="facebook"
+                className="flex items-center space-x-2 cursor-pointer w-full">
+                <Facebook className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium">Facebook</p>
+                  <p className="text-sm text-gray-500">Persoonlijk profiel</p>
+                </div>
+              </Label>
             </div>
-          </div>
+
+            <div className="flex items-center space-x-2 mb-3 p-2 rounded border hover:bg-gray-50">
+              <RadioGroupItem value="facebook_page" id="facebook_page" />
+              <Label
+                htmlFor="facebook_page"
+                className="flex items-center space-x-2 cursor-pointer w-full">
+                <Facebook className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium">Facebook Pagina</p>
+                  <p className="text-sm text-gray-500">Bedrijfspagina</p>
+                </div>
+              </Label>
+            </div>
+
+            {hasImage && (
+              <div className="flex items-center space-x-2 mb-3 p-2 rounded border hover:bg-gray-50">
+                <RadioGroupItem value="instagram" id="instagram" />
+                <Label
+                  htmlFor="instagram"
+                  className="flex items-center space-x-2 cursor-pointer w-full">
+                  <Instagram className="h-5 w-5 text-pink-600" />
+                  <div>
+                    <p className="font-medium">Instagram</p>
+                    <p className="text-sm text-gray-500">Business account</p>
+                  </div>
+                </Label>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2 mb-3 p-2 rounded border hover:bg-gray-50">
+              <RadioGroupItem value="twitter" id="twitter" />
+              <Label
+                htmlFor="twitter"
+                className="flex items-center space-x-2 cursor-pointer w-full">
+                <Twitter className="h-5 w-5 text-blue-400" />
+                <div>
+                  <p className="font-medium">Twitter</p>
+                  <p className="text-sm text-gray-500">Persoonlijk account</p>
+                </div>
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2 mb-3 p-2 rounded border hover:bg-gray-50">
+              <RadioGroupItem value="linkedin" id="linkedin" />
+              <Label
+                htmlFor="linkedin"
+                className="flex items-center space-x-2 cursor-pointer w-full">
+                <Linkedin className="h-5 w-5 text-blue-700" />
+                <div>
+                  <p className="font-medium">LinkedIn</p>
+                  <p className="text-sm text-gray-500">Persoonlijk profiel</p>
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4">
@@ -169,7 +239,9 @@ export default function PublishDialog({
           </Button>
           <Button
             onClick={handlePublish}
-            disabled={isPublishing || (platform === "instagram" && !hasImage)}>
+            disabled={
+              isPublishing || (selectedPlatform === "instagram" && !hasImage)
+            }>
             {isPublishing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

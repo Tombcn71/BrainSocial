@@ -50,6 +50,10 @@ export async function connectSocialAccount({
   }
 
   try {
+    console.log(
+      `Connecting social account: ${platform} - ${accountName} (${accountId})`
+    );
+
     // Controleer of het account al bestaat
     const existingAccountResult = await sql`
       SELECT * FROM social_accounts 
@@ -64,6 +68,7 @@ export async function connectSocialAccount({
     const id = existingAccount ? existingAccount.id : uuidv4();
 
     if (existingAccount) {
+      console.log(`Updating existing account: ${platform} - ${accountName}`);
       // Update bestaand account
       await sql`
         UPDATE social_accounts
@@ -77,6 +82,7 @@ export async function connectSocialAccount({
         WHERE id = ${id}
       `;
     } else {
+      console.log(`Creating new account: ${platform} - ${accountName}`);
       // Maak nieuw account
       await sql`
         INSERT INTO social_accounts (
@@ -95,6 +101,9 @@ export async function connectSocialAccount({
       `;
     }
 
+    console.log(
+      `Social account connected successfully: ${platform} - ${accountName}`
+    );
     revalidatePath("/dashboard/accounts");
     return { success: true, accountId: id };
   } catch (error) {
@@ -119,6 +128,8 @@ export async function getSocialAccounts() {
 
     // Zorg ervoor dat we altijd een array teruggeven
     const accounts = safeArray(accountsResult);
+
+    console.log(`Retrieved ${accounts.length} social accounts`);
 
     return { success: true, accounts };
   } catch (error) {
@@ -239,14 +250,48 @@ async function publishToFacebook({
   pageId?: string;
 }): Promise<PublishResult> {
   try {
-    // BELANGRIJKE WIJZIGING: Als er geen pageId is, kunnen we niet publiceren naar een persoonlijk profiel
-    // Facebook staat dit niet meer toe in nieuwere API versies zonder speciale toestemming
+    console.log(`Publishing to Facebook with pageId: ${pageId || "none"}`);
+
+    // If no pageId is provided, try to get pages for this account
     if (!pageId) {
-      return {
-        success: false,
-        error:
-          "Publiceren naar een persoonlijk Facebook profiel wordt niet ondersteund. Verbind een Facebook Pagina om te kunnen publiceren.",
-      };
+      console.log("No page ID provided, trying to fetch pages");
+
+      try {
+        const pagesResponse = await fetch(
+          `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+        );
+
+        if (pagesResponse.ok) {
+          const pagesData = await pagesResponse.json();
+          console.log(`Found ${pagesData.data?.length || 0} Facebook pages`);
+
+          // If we have pages, use the first one
+          if (
+            pagesData.data &&
+            Array.isArray(pagesData.data) &&
+            pagesData.data.length > 0
+          ) {
+            const page = pagesData.data[0];
+            console.log(`Using page: ${page.name} (${page.id})`);
+            pageId = page.id;
+            accessToken = page.access_token; // Use the page access token
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching Facebook pages:", error);
+      }
+
+      // If we still don't have a pageId, return an error
+      if (!pageId) {
+        console.error(
+          "No page ID provided for Facebook publishing and couldn't find any pages"
+        );
+        return {
+          success: false,
+          error:
+            "Publiceren naar een persoonlijk Facebook profiel wordt niet ondersteund. Verbind een Facebook Pagina om te kunnen publiceren.",
+        };
+      }
     }
 
     // Publiceer naar een Facebook Pagina
@@ -291,6 +336,7 @@ async function publishToFacebook({
       };
     }
 
+    console.log(`Successfully published to Facebook, post ID: ${data.id}`);
     return { success: true, postId: data.id };
   } catch (error) {
     console.error("Error publishing to Facebook:", error);
@@ -346,14 +392,31 @@ export async function publishToSocialMedia(
     });
 
     // BELANGRIJKE WIJZIGING: Zoek naar Facebook accounts met een page_id
-    let accountQuery = null;
-    if (platform === "facebook") {
-      console.log("Fetching Facebook Page account");
+    let accountQuery;
+    if (platform === "instagram") {
+      console.log("Fetching Instagram account with page_id");
       accountQuery = sql`
         SELECT * FROM social_accounts 
         WHERE user_id = ${user.id} 
         AND platform = ${platform}
         AND page_id IS NOT NULL
+        LIMIT 1
+      `;
+    } else if (platform === "facebook") {
+      console.log("Fetching Facebook account");
+      accountQuery = sql`
+        SELECT * FROM social_accounts 
+        WHERE user_id = ${user.id} 
+        AND (platform = ${platform} OR platform = 'facebook_page')
+        ORDER BY platform DESC  -- This will prioritize 'facebook_page' over 'facebook'
+        LIMIT 1
+      `;
+    } else if (platform === "facebook_page") {
+      console.log("Fetching Facebook Page account");
+      accountQuery = sql`
+        SELECT * FROM social_accounts 
+        WHERE user_id = ${user.id} 
+        AND platform = ${platform}
         LIMIT 1
       `;
     } else {
@@ -406,11 +469,11 @@ export async function publishToSocialMedia(
     let externalPostUrl: string | undefined = undefined;
 
     // Publiceer de content naar het juiste platform
-    if (platform === "facebook") {
-      console.log("Publishing to Facebook");
+    if (platform === "facebook" || platform === "facebook_page") {
+      console.log(`Publishing to ${platform}`);
 
       // NIEUWE CONTROLE: Controleer of er een page_id is voor Facebook
-      if (!account.page_id) {
+      if (platform === "facebook" && !account.page_id) {
         return {
           success: false,
           error:
@@ -422,7 +485,7 @@ export async function publishToSocialMedia(
       const facebookResult = await publishToFacebook({
         content: content,
         accessToken: account.access_token,
-        pageId: account.page_id,
+        pageId: account.page_id || account.account_id, // For facebook_page, use account_id if page_id is not available
       });
 
       console.log("Facebook publish result:", facebookResult);

@@ -125,10 +125,10 @@ export async function GET(request: NextRequest) {
         for (const page of pagesData.data) {
           console.log(`Processing page: ${page.name} (${page.id})`);
 
-          // Sla de Facebook pagina op als "facebook" platform
+          // Sla de Facebook pagina op als "facebook_page" platform (CHANGED FROM "facebook" to "facebook_page")
           await connectSocialAccount({
-            platform: "facebook",
-            accountName: page.name + " (Pagina)",
+            platform: "facebook_page", // Changed from "facebook" to "facebook_page" to distinguish from personal account
+            accountName: page.name,
             accountId: page.id,
             accessToken: page.access_token, // Gebruik de page access token
             tokenExpiry: new Date(
@@ -137,7 +137,9 @@ export async function GET(request: NextRequest) {
             pageId: page.id, // Sla de page_id op voor het publiceren
           });
 
-          console.log(`Facebook page ${page.name} stored successfully`);
+          console.log(
+            `Facebook page ${page.name} stored successfully as facebook_page`
+          );
 
           // Haal Instagram Business account op voor deze pagina
           console.log(

@@ -67,6 +67,8 @@ const getPlatformIcon = (platform: string) => {
       return <InstagramIcon className="h-5 w-5 text-[#E4405F]" />;
     case "facebook":
       return <FacebookIcon className="h-5 w-5 text-[#1877F2]" />;
+    case "facebook_page":
+      return <FacebookIcon className="h-5 w-5 text-[#1877F2]" />;
     default:
       return null;
   }
@@ -207,8 +209,11 @@ export default function SocialAccountsList({
                     )}`}>
                     {getPlatformIcon(account.platform)}
                   </div>
-                  <CardTitle className="text-lg capitalize">
-                    {account.platform}
+                  <CardTitle className="text-lg">
+                    {account.platform === "facebook_page"
+                      ? "Facebook Pagina"
+                      : account.platform.charAt(0).toUpperCase() +
+                        account.platform.slice(1)}
                   </CardTitle>
                 </div>
                 <DropdownMenu>
