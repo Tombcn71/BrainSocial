@@ -9,19 +9,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PlusIcon, FilterIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import ContentOverview from "./content-overview";
+import { Suspense } from "react";
+import ContentFilterWrapper from "./content-filter-wrapper";
 
-// In Next.js 15.2.4, we need to use a different approach for searchParams
+// In Next.js App Router, searchParams is passed as a prop to the page component
 export default async function ContentOverviewPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  // Safely extract the parameters without using Object methods on searchParams
-  const projectId = searchParams.projectId as string | undefined;
-  const campaignId = searchParams.campaignId as string | undefined;
+  // Safely extract the parameters
+  const projectId =
+    typeof searchParams.projectId === "string"
+      ? searchParams.projectId
+      : undefined;
+  const campaignId =
+    typeof searchParams.campaignId === "string"
+      ? searchParams.campaignId
+      : undefined;
 
   const { success: contentSuccess, content = [] } = await getUserContent(
     100,
@@ -53,35 +61,28 @@ export default async function ContentOverviewPage({
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Content overzicht
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {project && typeof project === "object" && "name" in project
-              ? `Content voor project: ${project.name}`
-              : "Al je content"}
-            {campaign && typeof campaign === "object" && "name" in campaign
-              ? ` / Campagne: ${campaign.name}`
-              : ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/content/overview/filter">
-            <Button variant="outline">
-              <FilterIcon className="h-4 w-4 mr-2" />
-              Filteren
-            </Button>
-          </Link>
-          <Link href="/dashboard/content">
-            <Button>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Content maken
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Content overzicht
+              </h1>
+              <div className="h-6 w-48 bg-muted rounded animate-pulse mt-2"></div>
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-24 bg-muted rounded animate-pulse"></div>
+              <div className="h-10 w-24 bg-muted rounded animate-pulse"></div>
+            </div>
+          </div>
+        }>
+        <ContentFilterWrapper
+          projectId={projectId}
+          campaignId={campaignId}
+          project={project}
+          campaign={campaign}
+        />
+      </Suspense>
 
       {!contentSuccess ? (
         <div className="rounded-md bg-destructive/10 p-4 text-destructive">
