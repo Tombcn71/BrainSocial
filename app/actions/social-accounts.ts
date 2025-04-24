@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import sql, { safeArray } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 // Voeg deze interface toe bovenaan het bestand, na de imports
 interface SocialAccountRecord {
@@ -26,38 +27,35 @@ type PublishResult =
   | { success: true; postId: string }
   | { success: false; error: string };
 
+// Update the connectSocialAccount function to check for required permissions
 export async function connectSocialAccount({
   platform,
-  accountName,
   accountId,
+  accountName,
   accessToken,
+  refreshToken,
   tokenExpiry,
-  profileImageUrl,
   pageId,
 }: {
   platform: string;
-  accountName: string;
   accountId: string;
+  accountName: string;
   accessToken: string;
+  refreshToken?: string;
   tokenExpiry?: string;
-  profileImageUrl?: string;
   pageId?: string;
 }) {
-  const user = await getCurrentUser();
+  const userId = (await cookies()).get("auth")?.value;
 
-  if (!user) {
-    throw new Error("Not authenticated");
+  if (!userId) {
+    return { success: false, error: "Not authenticated" };
   }
 
   try {
-    console.log(
-      `Connecting social account: ${platform} - ${accountName} (${accountId})`
-    );
-
-    // Controleer of het account al bestaat
+    // Check if account already exists
     const existingAccountResult = await sql`
-      SELECT * FROM social_accounts 
-      WHERE user_id = ${user.id} AND platform = ${platform} AND account_id = ${accountId}
+      SELECT id FROM social_accounts 
+      WHERE user_id = ${userId} AND platform = ${platform} AND account_id = ${accountId}
     `;
 
     // Veilig omgaan met het resultaat
@@ -67,48 +65,53 @@ export async function connectSocialAccount({
 
     const id = existingAccount ? existingAccount.id : uuidv4();
 
-    if (existingAccount) {
-      console.log(`Updating existing account: ${platform} - ${accountName}`);
-      // Update bestaand account
-      await sql`
-        UPDATE social_accounts
-        SET 
-          account_name = ${accountName},
-          access_token = ${accessToken},
-          token_expiry = ${tokenExpiry || null},
-          profile_image_url = ${profileImageUrl || null},
-          page_id = ${pageId || null},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}
-      `;
-    } else {
-      console.log(`Creating new account: ${platform} - ${accountName}`);
-      // Maak nieuw account
-      await sql`
-        INSERT INTO social_accounts (
-          id, user_id, platform, account_name, account_id, access_token, 
-          token_expiry, profile_image_url, page_id, created_at, updated_at
-        )
-        VALUES (
-          ${id}, ${
-        user.id
-      }, ${platform}, ${accountName}, ${accountId}, ${accessToken},
-          ${tokenExpiry || null}, ${profileImageUrl || null}, ${
-        pageId || null
-      }, 
-          CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )
-      `;
+    // If it's Facebook, check for required permissions
+    if (platform === "facebook" || platform === "facebook_page") {
+      const hasRequiredPermissions = await checkFacebookPermissions(
+        accessToken
+      );
+
+      if (!hasRequiredPermissions.success) {
+        return {
+          success: false,
+          error: `Missing required Facebook permissions: ${hasRequiredPermissions.missingPermissions?.join(
+            ", "
+          )}. Please reconnect with the proper permissions.`,
+        };
+      }
     }
 
-    console.log(
-      `Social account connected successfully: ${platform} - ${accountName}`
-    );
+    if (existingAccount) {
+      // Update existing account
+      await sql`
+        UPDATE social_accounts 
+        SET account_name = ${accountName}, 
+            access_token = ${accessToken}, 
+            refresh_token = ${refreshToken}, 
+            token_expiry = ${tokenExpiry},
+            page_id = ${pageId},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+      `;
+
+      revalidatePath("/dashboard/accounts");
+      return { success: true, accountId: id };
+    }
+
+    // Create new account
+    const newId = uuidv4();
+
+    await sql`
+      INSERT INTO social_accounts 
+      (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id) 
+      VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId})
+    `;
+
     revalidatePath("/dashboard/accounts");
-    return { success: true, accountId: id };
+    return { success: true, accountId: newId };
   } catch (error) {
-    console.error("Error connecting social account:", error);
-    throw new Error("Failed to connect social account");
+    console.error("Connect social account error:", error);
+    return { success: false, error: "Failed to connect social account" };
   }
 }
 
@@ -239,7 +242,7 @@ export async function refreshSocialAccountToken(accountId: string) {
   }
 }
 
-// Update the publishToFacebook function to ensure we're using the correct endpoint and token
+// Pas de functie aan om het type te gebruiken
 async function publishToFacebook({
   content,
   accessToken,
@@ -358,7 +361,7 @@ async function publishToFacebook({
   }
 }
 
-// Update the publishToSocialMedia function to ensure we're using the correct account for Facebook
+// Wijzig ook de publishToSocialMedia functie om het juiste type te gebruiken
 export async function publishToSocialMedia(
   contentId: string,
   platform: string
@@ -782,5 +785,46 @@ export async function publishToInstagram(contentId: string, accountId: string) {
   } catch (error) {
     console.error("Error publishing to Instagram:", error);
     return { success: false, error: "Failed to publish to Instagram" };
+  }
+}
+
+async function checkFacebookPermissions(
+  accessToken: string
+): Promise<{ success: boolean; missingPermissions?: string[] }> {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
+    );
+    if (!response.ok) {
+      console.error(
+        "Error fetching Facebook permissions:",
+        response.statusText
+      );
+      return { success: false };
+    }
+
+    const data = await response.json();
+    if (!data.data) {
+      console.error("No permissions data received from Facebook");
+      return { success: false };
+    }
+
+    const requiredPermissions = ["pages_read_engagement", "pages_manage_posts"];
+    const grantedPermissions = data.data
+      .filter((perm: any) => perm.status === "granted")
+      .map((perm: any) => perm.permission);
+    const missingPermissions = requiredPermissions.filter(
+      (perm) => !grantedPermissions.includes(perm)
+    );
+
+    if (missingPermissions.length > 0) {
+      console.warn("Missing Facebook permissions:", missingPermissions);
+      return { success: false, missingPermissions };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error checking Facebook permissions:", error);
+    return { success: false };
   }
 }

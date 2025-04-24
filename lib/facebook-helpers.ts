@@ -2,6 +2,55 @@
  * Helper functions for Facebook API integration
  */
 
+// Function to check Facebook token details
+export async function checkTokenDetails(accessToken: string) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/debug_token?input_token=${accessToken}&access_token=${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`
+    );
+
+    if (!response.ok) {
+      return { success: false, error: "Failed to fetch token details" };
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      return { success: false, error: data.error.message };
+    }
+
+    const isValid = data.data.is_valid;
+    const expiresAt = new Date(data.data.expires_at * 1000).toLocaleString(); // Convert seconds to milliseconds
+    const scopes = data.data.scopes;
+
+    return { success: true, isValid, expiresAt, scopes, details: data.data };
+  } catch (error) {
+    console.error("Error checking Facebook token details:", error);
+    return { success: false, error: "Failed to check token details" };
+  }
+}
+
+// Function to get user pages
+export async function getUserPages(accessToken: string) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+    );
+
+    if (!response.ok) {
+      return { success: false, error: "Failed to fetch Facebook Pages" };
+    }
+
+    const data = await response.json();
+    const pages = data.data || [];
+
+    return { success: true, pages };
+  } catch (error) {
+    console.error("Error fetching Facebook Pages:", error);
+    return { success: false, error: "Failed to fetch Facebook Pages" };
+  }
+}
+
 // Function to check if a Facebook access token has the required permissions
 export async function checkFacebookPermissions(accessToken: string) {
   try {
@@ -36,69 +85,5 @@ export async function checkFacebookPermissions(accessToken: string) {
   } catch (error) {
     console.error("Error checking Facebook permissions:", error);
     return { success: false, error: "Failed to check permissions" };
-  }
-}
-
-// Function to get a URL for requesting additional permissions
-export function getFacebookPermissionUrl(
-  appId: string,
-  redirectUri: string,
-  missingPermissions: string[]
-) {
-  const state = Math.random().toString(36).substring(2);
-
-  // Store state in localStorage or cookies to verify when the user returns
-
-  return `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
-    redirectUri
-  )}&state=${state}&scope=${missingPermissions.join(",")}`;
-}
-
-// Function to check token details
-export async function checkTokenDetails(accessToken: string) {
-  try {
-    const response = await fetch(
-      `https://graph.facebook.com/v18.0/debug_token?input_token=${accessToken}&access_token=${accessToken}`
-    );
-
-    if (!response.ok) {
-      return { success: false, error: "Failed to debug token" };
-    }
-
-    const data = await response.json();
-    return {
-      success: true,
-      details: data.data,
-      isValid: data.data?.is_valid === true,
-      expiresAt: data.data?.expires_at
-        ? new Date(data.data.expires_at * 1000).toISOString()
-        : "unknown",
-      scopes: data.data?.scopes || [],
-    };
-  } catch (error) {
-    console.error("Error checking token details:", error);
-    return { success: false, error: "Failed to check token details" };
-  }
-}
-
-// Function to get user pages
-export async function getUserPages(accessToken: string) {
-  try {
-    const response = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
-    );
-
-    if (!response.ok) {
-      return { success: false, error: "Failed to fetch user pages" };
-    }
-
-    const data = await response.json();
-    return {
-      success: true,
-      pages: data.data || [],
-    };
-  } catch (error) {
-    console.error("Error fetching user pages:", error);
-    return { success: false, error: "Failed to fetch user pages" };
   }
 }

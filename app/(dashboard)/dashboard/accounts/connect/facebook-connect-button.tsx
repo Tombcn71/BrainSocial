@@ -3,50 +3,43 @@
 import { Button } from "@/components/ui/button";
 import { Facebook } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function FacebookConnectButton() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleConnect = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      console.log("Starting Facebook connection process...");
+      // Generate a state parameter for security
+      const state = Math.random().toString(36).substring(2);
 
-      // Bouw de OAuth URL
-      const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+      // Store the state in localStorage to verify when the user returns
+      localStorage.setItem("facebook_oauth_state", state);
+
+      // Define the permissions we need
+      const scopes = [
+        "public_profile",
+        "email",
+        "pages_show_list",
+        "pages_read_engagement",
+        "pages_manage_posts",
+        "instagram_basic",
+        "instagram_content_publish",
+      ];
+
+      // Get the app ID from environment variables
+      const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
       const redirectUri = encodeURIComponent(
         process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI ||
           "http://localhost:3000/api/auth/facebook/callback"
       );
 
-      console.log(
-        "Using redirect URI:",
-        process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI
-      );
+      // Build the OAuth URL
+      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
+        ","
+      )}`;
 
-      // Make sure we're not requesting publish_to_groups permission
-      // The permissions should be:
-      const scope = encodeURIComponent(
-        [
-          "public_profile",
-          "email",
-          "pages_show_list",
-          "pages_read_engagement",
-          "pages_manage_posts",
-          "pages_manage_metadata",
-          "instagram_basic",
-          "instagram_content_publish",
-        ].join(",")
-      );
-
-      // Bouw de volledige OAuth URL - zonder state parameter
-      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
-
-      console.log("Redirecting to Facebook OAuth URL...");
-
-      // Redirect naar de OAuth URL
+      // Redirect to Facebook for authentication
       window.location.href = oauthUrl;
     } catch (error) {
       console.error("Error connecting to Facebook:", error);
@@ -60,7 +53,7 @@ export default function FacebookConnectButton() {
       disabled={isLoading}
       className="w-full bg-[#1877F2] hover:bg-[#0E65D9] text-white">
       <Facebook className="mr-2 h-4 w-4" />
-      {isLoading ? "Verbinden..." : "Verbind met Facebook"}
+      {isLoading ? "Connecting..." : "Connect with Facebook"}
     </Button>
   );
 }
