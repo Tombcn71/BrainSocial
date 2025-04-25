@@ -4,7 +4,7 @@ import sql from "@/lib/db";
 import { cookies } from "next/headers";
 
 export async function getUserSubscription() {
-  const userId = (await cookies()).get("auth")?.value;
+  const userId = cookies().get("auth")?.value;
 
   if (!userId) {
     return { success: false, error: "Not authenticated" };
@@ -22,10 +22,10 @@ export async function getUserSubscription() {
 }
 
 export async function createCheckoutSession(
-  plan: "starter" | "pro" | "business",
+  plan: "starter" | "plus",
   returnUrl: string
 ) {
-  const userId = (await cookies()).get("auth")?.value;
+  const userId = cookies().get("auth")?.value;
 
   if (!userId) {
     return { success: false, error: "Not authenticated" };
@@ -41,7 +41,7 @@ export async function createCheckoutSession(
 }
 
 export async function cancelSubscription() {
-  const userId = (await cookies()).get("auth")?.value;
+  const userId = cookies().get("auth")?.value;
 
   if (!userId) {
     return { success: false, error: "Not authenticated" };
@@ -49,10 +49,10 @@ export async function cancelSubscription() {
 
   try {
     await sql`
-      UPDATE subscriptions 
-      SET status = 'canceled'
-      WHERE user_id = ${userId}
-    `;
+     UPDATE subscriptions 
+     SET status = 'canceled'
+     WHERE user_id = ${userId}
+   `;
 
     return { success: true };
   } catch (error) {
@@ -61,8 +61,8 @@ export async function cancelSubscription() {
   }
 }
 
-export async function updateSubscription(plan: "starter" | "pro" | "business") {
-  const userId = (await cookies()).get("auth")?.value;
+export async function updateSubscription(plan: "starter" | "plus") {
+  const userId = cookies().get("auth")?.value;
 
   if (!userId) {
     return { success: false, error: "Not authenticated" };
@@ -70,10 +70,10 @@ export async function updateSubscription(plan: "starter" | "pro" | "business") {
 
   try {
     await sql`
-      UPDATE subscriptions 
-      SET plan = ${plan}
-      WHERE user_id = ${userId}
-    `;
+     UPDATE subscriptions 
+     SET plan = ${plan}
+     WHERE user_id = ${userId}
+   `;
 
     return { success: true };
   } catch (error) {

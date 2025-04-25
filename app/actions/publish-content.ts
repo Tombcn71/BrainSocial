@@ -10,6 +10,20 @@ type PublishContentParams = {
   platform: "facebook" | "facebook_page" | "instagram";
 };
 
+// Define the SocialAccount type
+interface SocialAccount {
+  id: string;
+  user_id: string;
+  platform: string;
+  account_id: string;
+  account_name: string;
+  access_token: string;
+  refresh_token?: string;
+  token_expiry?: string | null;
+  profile_image_url?: string;
+  page_id?: string;
+}
+
 export async function publishContent({
   contentId,
   platformId,
@@ -57,7 +71,10 @@ export async function publishContent({
       publishResult = await publishToFacebook({
         content,
         accessToken: account.access_token,
-        pageId: platform === "facebook_page" ? account.account_id : undefined,
+        pageId:
+          platform === "facebook_page"
+            ? (account.account_id as string)
+            : undefined,
       });
     } else if (platform === "instagram") {
       publishResult = await publishToInstagram({
@@ -124,8 +141,8 @@ async function publishToFacebook({
 }) {
   try {
     const endpoint = pageId
-      ? `https://graph.facebook.com/v22.0/${pageId}/feed`
-      : `https://graph.facebook.com/v22.0/me/feed`;
+      ? `https://graph.facebook.com/v18.0/${pageId}/feed`
+      : `https://graph.facebook.com/v18.0/me/feed`;
 
     const body: Record<string, string> = {
       message: content.content,
@@ -192,7 +209,7 @@ async function publishToInstagram({
 
     // Stap 1: Maak een container voor de media
     const containerResponse = await fetch(
-      `https://graph.facebook.com/v22.0/${instagramAccountId}/media`,
+      `https://graph.facebook.com/v18.0/${instagramAccountId}/media`,
       {
         method: "POST",
         headers: {
@@ -222,7 +239,7 @@ async function publishToInstagram({
 
     // Stap 2: Publiceer de container
     const publishResponse = await fetch(
-      `https://graph.facebook.com/v22.0/${instagramAccountId}/media_publish`,
+      `https://graph.facebook.com/v18.0/${instagramAccountId}/media_publish`,
       {
         method: "POST",
         headers: {

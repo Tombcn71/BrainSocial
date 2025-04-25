@@ -20,7 +20,7 @@ const dict = {
     signup: "Aanmelden",
   },
   landing: {
-    title: " Smart Social Media Management",
+    title: "AI-Powered Social Media Content",
     subtitle: "Genereer, plan en publiceer social media content met AI",
     cta: "Begin nu",
     features: {
@@ -41,8 +41,8 @@ const dict = {
           "1 social media kanaal",
         ],
       },
-      pro: {
-        name: "Pro",
+      plus: {
+        name: "Plus",
         price: "€19,99",
         period: "per maand",
         features: [
@@ -78,7 +78,7 @@ export default function Home() {
               <BrainCircuitIcon className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-[#8A4FFF]">
-              BrainSocial
+              Brainsocial
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
@@ -130,7 +130,7 @@ export default function Home() {
             <div className="flex items-center justify-center mb-6 space-x-2">
               <SparklesIcon className="h-6 w-6 text-[#8A4FFF] animate-pulse-light" />
               <span className="text-sm font-medium px-3 py-1 rounded-full bg-[#8A4FFF]/10 text-[#8A4FFF]">
-                AI-Powered Content Creatie
+                AI-Powered Content Creation
               </span>
               <SparklesIcon className="h-6 w-6 text-[#8A4FFF] animate-pulse-light" />
             </div>
@@ -276,7 +276,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-center mb-12">
               {dict.landing.pricing.title}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* Starter Plan */}
               <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-brand-purple/10">
                 <div className="p-6">
@@ -313,15 +313,15 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Pro Plan */}
-              <div className="bg-white rounded-xl overflow-hidden shadow-xl border-2 border-brand-purple/20 relative transform scale-105">
+              {/* Plus Plan */}
+              <div className="bg-white rounded-xl overflow-hidden shadow-xl border-2 border-brand-purple/20 relative">
                 <div className="absolute top-0 right-0 bg-brand-purple text-white px-4 py-1 text-xs font-medium rounded-bl-lg">
                   Populair
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-2xl font-bold">
-                      {dict.landing.pricing.pro.name}
+                      {dict.landing.pricing.plus.name}
                     </h3>
                     <div className="h-10 w-10 rounded-full gradient-bg-1 flex items-center justify-center">
                       <RocketIcon className="h-5 w-5 text-white" />
@@ -329,60 +329,22 @@ export default function Home() {
                   </div>
                   <div className="mb-4">
                     <span className="text-4xl font-bold">
-                      {dict.landing.pricing.pro.price}
+                      {dict.landing.pricing.plus.price}
                     </span>
                     <span className="text-muted-foreground">
                       {" "}
-                      {dict.landing.pricing.pro.period}
+                      {dict.landing.pricing.plus.period}
                     </span>
                   </div>
                   <ul className="space-y-3 mb-6">
-                    {dict.landing.pricing.pro.features.map((feature, i) => (
+                    {dict.landing.pricing.plus.features.map((feature, i) => (
                       <li key={i} className="flex items-start">
                         <CheckIcon className="h-5 w-5 text-brand-green mr-2 mt-0.5" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Link href="/signup?plan=pro" className="w-full">
-                    <Button className="w-full rounded-full btn-gradient text-white">
-                      {dict.landing.cta}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Business Plan */}
-              <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-brand-purple/10">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-bold">
-                      {dict.landing.pricing.business.name}
-                    </h3>
-                    <div className="h-10 w-10 rounded-full bg-brand-blue/10 flex items-center justify-center">
-                      <BarChart3Icon className="h-5 w-5 text-brand-blue" />
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">
-                      {dict.landing.pricing.business.price}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      {dict.landing.pricing.business.period}
-                    </span>
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    {dict.landing.pricing.business.features.map(
-                      (feature, i) => (
-                        <li key={i} className="flex items-start">
-                          <CheckIcon className="h-5 w-5 text-brand-green mr-2 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      )
-                    )}
-                  </ul>
-                  <Link href="/signup?plan=business" className="w-full">
+                  <Link href="/signup?plan=plus" className="w-full">
                     <Button className="w-full rounded-full btn-gradient text-white">
                       {dict.landing.cta}
                     </Button>
@@ -568,14 +530,14 @@ export default function Home() {
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="/privacy-policy"
+                    href="#"
                     className="text-muted-foreground hover:text-brand-purple transition-colors">
                     Privacy
                   </a>
                 </li>
                 <li>
                   <a
-                    href="/terms"
+                    href="#"
                     className="text-muted-foreground hover:text-brand-purple transition-colors">
                     Terms
                   </a>

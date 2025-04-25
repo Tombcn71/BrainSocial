@@ -36,8 +36,8 @@ export const dict = {
           "1 social media kanaal",
         ],
       },
-      pro: {
-        name: "Pro",
+      plus: {
+        name: "Plus",
         price: "€19,99",
         period: "per maand",
         features: [
@@ -45,18 +45,6 @@ export const dict = {
           "Geavanceerde content kalender",
           "3 social media kanalen",
           "Analytics dashboard",
-        ],
-      },
-      business: {
-        name: "Business",
-        price: "€49,99",
-        period: "per maand",
-        features: [
-          "Onbeperkte AI generaties",
-          "Premium content kalender",
-          "Onbeperkte social media kanalen",
-          "Geavanceerde analytics",
-          "Prioriteit ondersteuning",
         ],
       },
     },

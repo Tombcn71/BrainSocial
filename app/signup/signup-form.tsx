@@ -40,7 +40,7 @@ export default function SignupForm() {
             <p className="text-sm text-muted-foreground">
               Je registreert voor het{" "}
               <span className="font-medium">
-                {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                {plan === "plus" ? "Plus" : "Starter"}
               </span>{" "}
               abonnement.
             </p>
