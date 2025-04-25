@@ -67,9 +67,13 @@ export async function checkFacebookPermissions(
     );
 
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error fetching Facebook permissions:", errorData);
       return {
         success: false,
-        error: "Failed to fetch permissions from Facebook",
+        error: `Failed to fetch permissions from Facebook: ${
+          errorData.error?.message || "Unknown error"
+        }`,
       };
     }
 

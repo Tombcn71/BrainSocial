@@ -67,7 +67,7 @@ export default function FacebookConnectButton() {
       // Build the OAuth URL
       const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
         ","
-      )}`;
+      )}&auth_type=rerequest`;
 
       // Redirect to Facebook for authentication
       window.location.href = oauthUrl;

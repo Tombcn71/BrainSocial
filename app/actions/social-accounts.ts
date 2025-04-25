@@ -90,7 +90,7 @@ export async function connectSocialAccount({
           success: false,
           error: `Missing required Facebook permissions: ${hasRequiredPermissions.missingPermissions?.join(
             ", "
-          )}. Please reconnect with the proper permissions.`,
+          )}. Please reconnect with the proper permissions. <a href="/dashboard/accounts/reconnect" class="text-blue-500 hover:underline">Reconnect Facebook</a>`,
         };
       }
     }
@@ -318,7 +318,7 @@ async function publishToFacebook({
       return {
         success: false,
         error: `Facebook API error: ${data.error?.message || "Unknown error"}. 
-   Please check if your app has the required permissions: pages_read_engagement and pages_manage_posts.`,
+   Please check if your app has the required permissions: pages_read_engagement and pages_manage_posts. <a href="/dashboard/accounts/reconnect" class="text-blue-500 hover:underline">Reconnect Facebook</a>`,
       };
     }
 
@@ -761,11 +761,9 @@ export async function publishToInstagram(contentId: string, accountId: string) {
   }
 }
 
-async function checkFacebookPermissions(accessToken: string): Promise<{
-  [x: string]: any;
-  success: boolean;
-  missingPermissions?: string[];
-}> {
+async function checkFacebookPermissions(
+  accessToken: string
+): Promise<{ success: boolean; missingPermissions?: string[] }> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
