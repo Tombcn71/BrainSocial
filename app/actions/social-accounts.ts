@@ -14,7 +14,7 @@ interface SocialAccountRecord {
   account_name: string;
   access_token: string;
   refresh_token?: string;
-  token_expiry?: string;
+  token_expiry?: string | null; // Modified to accept null
   profile_image_url?: string;
   page_id?: string;
   created_at: string;
@@ -42,7 +42,7 @@ export async function connectSocialAccount({
   accountName: string;
   accessToken: string;
   refreshToken?: string;
-  tokenExpiry?: string;
+  tokenExpiry?: string | null; // Modified to accept null
   pageId?: string;
   profileImageUrl?: string;
 }) {
@@ -103,7 +103,9 @@ export async function connectSocialAccount({
        SET account_name = ${accountName}, 
            access_token = ${accessToken}, 
            refresh_token = ${refreshToken}, 
-           token_expiry = ${tokenExpiry},
+           token_expiry = ${
+             tokenExpiry === null ? null : tokenExpiry
+           }, // Handle null value
            page_id = ${pageId},
            profile_image_url = ${profileImageUrl},
            updated_at = CURRENT_TIMESTAMP
@@ -121,7 +123,9 @@ export async function connectSocialAccount({
     await sql`
      INSERT INTO social_accounts 
      (id, user_id, platform, account_id, account_name, access_token, refresh_token, token_expiry, page_id, profile_image_url) 
-     VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${tokenExpiry}, ${pageId}, ${profileImageUrl})
+     VALUES (${newId}, ${userId}, ${platform}, ${accountId}, ${accountName}, ${accessToken}, ${refreshToken}, ${
+      tokenExpiry === null ? null : tokenExpiry
+    }, ${pageId}, ${profileImageUrl})
    `;
 
     revalidatePath("/dashboard/accounts");
@@ -214,7 +218,7 @@ export async function refreshSocialAccountToken(accountId: string) {
         return { success: false, error: "Missing Facebook API credentials" };
       }
 
-      // Gebruik de long-lived token om een nieuwe token te krijgen
+      // Gebruik de long-lived token om een nieuwe access token te krijgen
       const response = await fetch(
         `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${account.access_token}`
       );
@@ -314,7 +318,7 @@ async function publishToFacebook({
       return {
         success: false,
         error: `Facebook API error: ${data.error?.message || "Unknown error"}. 
-    Please check if your app has the required permissions: pages_read_engagement and pages_manage_posts.`,
+   Please check if your app has the required permissions: pages_read_engagement and pages_manage_posts.`,
       };
     }
 
@@ -378,29 +382,29 @@ export async function publishToSocialMedia(
     if (platform === "instagram") {
       console.log("Fetching Instagram account with page_id");
       accountQuery = sql`
-    SELECT * FROM social_accounts 
-    WHERE user_id = ${user.id} 
-    AND platform = ${platform}
-    AND page_id IS NOT NULL
-    LIMIT 1
-  `;
+   SELECT * FROM social_accounts 
+   WHERE user_id = ${user.id} 
+   AND platform = ${platform}
+   AND page_id IS NOT NULL
+   LIMIT 1
+ `;
     } else if (platform === "facebook" || platform === "facebook_page") {
       console.log("Fetching Facebook page account");
       // Explicitly look for facebook_page accounts first
       accountQuery = sql`
-    SELECT * FROM social_accounts 
-    WHERE user_id = ${user.id} 
-    AND platform = 'facebook_page'
-    LIMIT 1
-  `;
+   SELECT * FROM social_accounts 
+   WHERE user_id = ${user.id} 
+   AND platform = 'facebook_page'
+   LIMIT 1
+ `;
     } else {
       console.log(`Fetching social account for platform: ${platform}`);
       accountQuery = sql`
-    SELECT * FROM social_accounts 
-    WHERE user_id = ${user.id} 
-    AND platform = ${platform}
-    LIMIT 1
-  `;
+   SELECT * FROM social_accounts 
+   WHERE user_id = ${user.id} 
+   AND platform = ${platform}
+   LIMIT 1
+ `;
     }
 
     // Voer de query uit
@@ -757,9 +761,11 @@ export async function publishToInstagram(contentId: string, accountId: string) {
   }
 }
 
-async function checkFacebookPermissions(
-  accessToken: string
-): Promise<{ success: boolean; missingPermissions?: string[] }> {
+async function checkFacebookPermissions(accessToken: string): Promise<{
+  [x: string]: any;
+  success: boolean;
+  missingPermissions?: string[];
+}> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`

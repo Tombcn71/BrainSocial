@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   // Als dat niet lukt, probeer de auth cookie direct te lezen
   if (!user) {
-    const authCookie = cookies().get("auth")?.value;
+    const authCookie = (await cookies()).get("auth")?.value;
     if (authCookie) {
       user = { id: authCookie };
       console.log("Using auth cookie directly:", authCookie);
