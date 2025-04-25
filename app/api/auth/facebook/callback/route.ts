@@ -153,6 +153,7 @@ export async function GET(request: NextRequest) {
               Date.now() + 60 * 24 * 60 * 60 * 1000
             ).toISOString(),
             pageId: page.id, // Sla de page_id op voor het publiceren
+            profileImageUrl: userData.picture?.data?.url,
           });
 
           if (!pageConnectResult.success) {
