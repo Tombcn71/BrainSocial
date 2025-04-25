@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { connectSocialAccount } from "@/app/actions/social-accounts";
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force_dynamic";
 
 export async function GET(request: NextRequest) {
   console.log("Facebook callback route called");
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   // Als dat niet lukt, probeer de auth cookie direct te lezen
   if (!user) {
-    const authCookie = (await cookies()).get("auth")?.value;
+    const authCookie = cookies().get("auth")?.value;
     if (authCookie) {
       user = { id: authCookie };
       console.log("Using auth cookie directly:", authCookie);
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     // Haal Facebook pagina's op
     console.log("Fetching Facebook pages...");
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
     );
 
     if (pagesResponse.ok) {
@@ -149,9 +150,7 @@ export async function GET(request: NextRequest) {
             accountName: page.name,
             accountId: page.id,
             accessToken: page.access_token, // Gebruik de page access token
-            tokenExpiry: new Date(
-              Date.now() + 60 * 24 * 60 * 60 * 1000
-            ).toISOString(),
+            tokenExpiry: null, // Page tokens do not expire
             pageId: page.id, // Sla de page_id op voor het publiceren
             profileImageUrl: userData.picture?.data?.url,
           });
@@ -193,9 +192,7 @@ export async function GET(request: NextRequest) {
                   instagramAccount.username || `Instagram via ${page.name}`,
                 accountId: instagramAccount.id,
                 accessToken: page.access_token, // Gebruik de page access token voor Instagram API
-                tokenExpiry: new Date(
-                  Date.now() + 60 * 24 * 60 * 60 * 1000
-                ).toISOString(),
+                tokenExpiry: null, // Page tokens do not expire
                 profileImageUrl: instagramAccount.profile_picture_url,
                 pageId: page.id, // Sla de Facebook Page ID op voor het publiceren van content
               });
