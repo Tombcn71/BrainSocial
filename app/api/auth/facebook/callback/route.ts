@@ -4,7 +4,7 @@ import { connectSocialAccount } from "@/app/actions/social-accounts";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
-export const dynamic = "force_dynamic";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   console.log("Facebook callback route called");
@@ -128,7 +128,8 @@ export async function GET(request: NextRequest) {
     // Haal Facebook pagina's op
     console.log("Fetching Facebook pages...");
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
+      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`,
+      { method: "GET" }
     );
 
     if (pagesResponse.ok) {
