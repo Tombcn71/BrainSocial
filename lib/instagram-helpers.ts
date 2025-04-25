@@ -9,7 +9,7 @@ export async function checkInstagramBusinessAccount(
 ) {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/${pageId}?fields=instagram_business_account&access_token=${accessToken}`
     );
 
     if (!response.ok) {
@@ -49,7 +49,7 @@ export async function getInstagramAccountInfo(
 ) {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=username,profile_picture_url,name&access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/${instagramAccountId}?fields=username,profile_picture_url,name&access_token=${accessToken}`
     );
 
     if (!response.ok) {
@@ -81,7 +81,7 @@ export async function testInstagramPublishing(
     const testCaption = "This is a test post from our app. #test";
 
     const containerResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}/media`,
+      `https://graph.facebook.com/v22.0/${instagramAccountId}/media`,
       {
         method: "POST",
         headers: {
@@ -126,7 +126,7 @@ export async function getPagesWithInstagramAccounts(accessToken: string) {
   try {
     // First get all pages
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me/accounts?access_token=${accessToken}`
     );
 
     if (!pagesResponse.ok) {

@@ -124,8 +124,8 @@ async function publishToFacebook({
 }) {
   try {
     const endpoint = pageId
-      ? `https://graph.facebook.com/v18.0/${pageId}/feed`
-      : `https://graph.facebook.com/v18.0/me/feed`;
+      ? `https://graph.facebook.com/v22.0/${pageId}/feed`
+      : `https://graph.facebook.com/v22.0/me/feed`;
 
     const body: Record<string, string> = {
       message: content.content,
@@ -192,7 +192,7 @@ async function publishToInstagram({
 
     // Stap 1: Maak een container voor de media
     const containerResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}/media`,
+      `https://graph.facebook.com/v22.0/${instagramAccountId}/media`,
       {
         method: "POST",
         headers: {
@@ -222,7 +222,7 @@ async function publishToInstagram({
 
     // Stap 2: Publiceer de container
     const publishResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}/media_publish`,
+      `https://graph.facebook.com/v22.0/${instagramAccountId}/media_publish`,
       {
         method: "POST",
         headers: {

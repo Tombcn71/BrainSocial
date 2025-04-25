@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const redirectUri = process.env.META_REDIRECT_URI;
 
     const tokenResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`,
+      `https://graph.facebook.com/v22.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`,
       { method: "GET" }
     );
 
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     // Haal gebruikersgegevens op
     const userResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${accessToken}`,
+      `https://graph.facebook.com/v22.0/me?fields=id,name,email,picture&access_token=${accessToken}`,
       { method: "GET" }
     );
 
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
     // Haal Facebook pagina's op
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`,
+      `https://graph.facebook.com/v22.0/me/accounts?access_token=${accessToken}`,
       {
         method: "GET",
       }

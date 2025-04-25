@@ -88,7 +88,7 @@ export async function publishToInstagram(contentId: string) {
     console.log("Using image URL:", content.image_url);
 
     const containerResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${account.page_id}/media`,
+      `https://graph.facebook.com/v22.0/${account.page_id}/media`,
       {
         method: "POST",
         headers: {
@@ -138,7 +138,7 @@ export async function publishToInstagram(contentId: string) {
     // Step 2: Publish the media container
     console.log("Publishing Instagram media container");
     const publishResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${account.page_id}/media_publish`,
+      `https://graph.facebook.com/v22.0/${account.page_id}/media_publish`,
       {
         method: "POST",
         headers: {

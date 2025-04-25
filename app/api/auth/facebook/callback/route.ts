@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     // Wissel de code in voor een access token
     const tokenResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&code=${code}`,
+      `https://graph.facebook.com/v22.0/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&code=${code}`,
       { method: "GET" }
     );
 
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     // Haal gebruikersgegevens op van Facebook
     console.log("Fetching user data...");
     const userResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${accessToken}`,
+      `https://graph.facebook.com/v22.0/me?fields=id,name,email,picture&access_token=${accessToken}`,
       { method: "GET" }
     );
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     // Haal Facebook pagina's op
     console.log("Fetching Facebook pages...");
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`,
+      `https://graph.facebook.com/v22.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`,
       { method: "GET" }
     );
 
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
             `Checking for Instagram account linked to page ${page.name}...`
           );
           const instagramResponse = await fetch(
-            `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${page.access_token}`
+            `https://graph.facebook.com/v22.0/${page.id}?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${page.access_token}`
           );
 
           if (instagramResponse.ok) {

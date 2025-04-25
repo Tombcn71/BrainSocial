@@ -90,11 +90,11 @@ export async function publishToFacebook(contentId: string) {
     let endpoint;
     if (account.page_id) {
       // Use Page feed if available
-      endpoint = `https://graph.facebook.com/v18.0/${account.page_id}/feed`;
+      endpoint = `https://graph.facebook.com/v22.0/${account.page_id}/feed`;
       console.log("Using Page feed endpoint with page_id:", account.page_id);
     } else {
       // For personal timeline, use me/feed
-      endpoint = `https://graph.facebook.com/v18.0/me/feed`;
+      endpoint = `https://graph.facebook.com/v22.0/me/feed`;
       console.log("Using personal feed endpoint with me/feed");
     }
 

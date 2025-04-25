@@ -41,7 +41,7 @@ export async function GET() {
           `Trying to fetch pages for account ${account.id} (${account.account_name})`
         );
         const pagesResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me/accounts?access_token=${account.access_token}`
+          `https://graph.facebook.com/v22.0/me/accounts?access_token=${account.access_token}`
         );
 
         if (pagesResponse.ok) {

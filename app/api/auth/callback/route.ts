@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   try {
     // Wissel de code in voor een access token
     const tokenResponse = await fetch(
-      "https://graph.facebook.com/v18.0/oauth/access_token",
+      "https://graph.facebook.com/v22.0/oauth/access_token",
       {
         method: "POST",
         headers: {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     // Haal gebruikersgegevens op van Facebook
     const userResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me?fields=id,name,email,picture&access_token=${accessToken}`
     );
     const userData = await userResponse.json();
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
 
     // Haal Instagram accounts op die verbonden zijn met dit Facebook account
     const instagramAccountsResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me/accounts?fields=instagram_business_account{id,name,username,profile_picture_url}&access_token=${accessToken}`
     );
 
     if (instagramAccountsResponse.ok) {

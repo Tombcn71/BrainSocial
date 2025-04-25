@@ -43,7 +43,7 @@ export default function ReconnectFacebook() {
       );
 
       // Build the OAuth URL
-      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
+      const oauthUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
         ","
       )}`;
 

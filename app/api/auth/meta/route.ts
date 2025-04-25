@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   ];
 
   // Bouw de Facebook OAuth URL
-  const metaAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
+  const metaAuthUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scopes.join(
     ","
   )}`;
 

@@ -4,8 +4,8 @@ export const FACEBOOK_CONFIG = {
   clientSecret: process.env.FACEBOOK_APP_SECRET || "",
   redirectUri:
     process.env.FACEBOOK_REDIRECT_URI ||
-    "http://localhost:3000/api/auth/facebook/callback",
-  graphApiVersion: "v18.0",
+    "https://www.brainsocial.nl//api/auth/facebook/callback",
+  graphApiVersion: "v22.0",
   scopes: [
     "public_profile",
     "email",

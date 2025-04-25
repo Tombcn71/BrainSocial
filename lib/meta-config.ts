@@ -5,12 +5,12 @@ export const META_CONFIG = {
   CLIENT_SECRET: process.env.META_CLIENT_SECRET || "", // Vul hier je app secret in
   REDIRECT_URI:
     process.env.META_REDIRECT_URI ||
-    "http://localhost:3000/api/auth/meta/callback",
+    "https://www.brainsocial.nl//api/auth/meta/callback",
 
   // API endpoints
-  AUTH_URL: "https://www.facebook.com/v18.0/dialog/oauth",
-  TOKEN_URL: "https://graph.facebook.com/v18.0/oauth/access_token",
-  GRAPH_API: "https://graph.facebook.com/v18.0",
+  AUTH_URL: "https://www.facebook.com/v22.0/dialog/oauth",
+  TOKEN_URL: "https://graph.facebook.com/22.0/oauth/access_token",
+  GRAPH_API: "https://graph.facebook.com/v22.0",
 
   // Permissies
   SCOPES: [
