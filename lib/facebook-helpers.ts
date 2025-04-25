@@ -39,7 +39,7 @@ export async function checkTokenDetails(accessToken: string) {
 export async function getUserPages(accessToken: string) {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
     );
 
     if (!response.ok) {
@@ -63,7 +63,7 @@ export async function checkFacebookPermissions(
 > {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me/permissions?access_token=${accessToken}`
     );
 
     if (!response.ok) {

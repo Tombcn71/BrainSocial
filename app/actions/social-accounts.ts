@@ -220,7 +220,7 @@ export async function refreshSocialAccountToken(accountId: string) {
 
       // Gebruik de long-lived token om een nieuwe access token te krijgen
       const response = await fetch(
-        `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${account.access_token}`
+        `https://graph.facebook.com/v22.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${account.access_token}`
       );
 
       if (!response.ok) {
@@ -286,8 +286,8 @@ async function publishToFacebook({
 
     // If we have the permissions, proceed with publishing
     const endpoint = pageId
-      ? `https://graph.facebook.com/v18.0/${pageId}/feed`
-      : `https://graph.facebook.com/v18.0/me/feed`;
+      ? `https://graph.facebook.com/v22.0/${pageId}/feed`
+      : `https://graph.facebook.com/v22.0/me/feed`;
 
     // Prepare the body
     const body: Record<string, string> = {
@@ -516,7 +516,7 @@ export async function publishToSocialMedia(
       if (content.image_url) {
         // Stap 1: Maak een media container voor de afbeelding
         const containerResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${
+          `https://graph.facebook.com/v22.0/${
             account.page_id
           }/media?image_url=${encodeURIComponent(
             content.image_url
@@ -549,7 +549,7 @@ export async function publishToSocialMedia(
 
       // Stap 2: Publiceer de media container
       const publishResponse = await fetch(
-        `https://graph.facebook.com/v18.0/${account.page_id}/media_publish?creation_id=${mediaContainerId}&access_token=${account.access_token}`,
+        `https://graph.facebook.com/v22.0/${account.page_id}/media_publish?creation_id=${mediaContainerId}&access_token=${account.access_token}`,
         {
           method: "POST",
         }
@@ -688,7 +688,7 @@ export async function publishToInstagram(contentId: string, accountId: string) {
     // Voor Instagram hebben we eerst een container nodig
     // Stap 1: Maak een media container voor de afbeelding
     const containerResponse = await fetch(
-      `${process.env.META_GRAPH_API || "https://graph.facebook.com/v18.0"}/${
+      `${process.env.META_GRAPH_API || "https://graph.facebook.com/v22.0"}/${
         account.page_id
       }/media?image_url=${encodeURIComponent(
         content.image_url
@@ -714,7 +714,7 @@ export async function publishToInstagram(contentId: string, accountId: string) {
 
     // Stap 2: Publiceer de media container
     const publishResponse = await fetch(
-      `${process.env.META_GRAPH_API || "https://graph.facebook.com/v18.0"}/${
+      `${process.env.META_GRAPH_API || "https://graph.facebook.com/v22.0"}/${
         account.page_id
       }/media_publish?creation_id=${mediaContainerId}&access_token=${
         account.access_token
@@ -766,7 +766,7 @@ async function checkFacebookPermissions(
 ): Promise<{ success: boolean; missingPermissions?: string[] }> {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
+      `https://graph.facebook.com/v22.0/me/permissions?access_token=${accessToken}`
     );
     if (!response.ok) {
       console.error(
